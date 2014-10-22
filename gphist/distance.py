@@ -1,0 +1,2 @@
+"""Cosmological distance model.
+"""

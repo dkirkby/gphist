@@ -1,0 +1,2 @@
+"""Gaussian random process generator.
+"""
