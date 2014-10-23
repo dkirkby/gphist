@@ -43,13 +43,19 @@ def main():
     # Calculate the corresponding comoving distance functions DC(z).
     DC = evol.get_DC(DH)
 
-    # Calculate the corresponding comoving angular scale function DA(z).
+    # Calculate the corresponding comoving angular scale functions DA(z).
     DA = gphist.distance.convert_DC_to_DA(DH,DC,args.omega_k)
 
+    # Initialize the posteriors to use.
+    post = gphist.posterior.LocalH0Posterior()
+    nll = post.get_nll(DH,DA)
+    wgt = np.exp(-nll)
+
     q = np.array((0.05,0.5,0.95))
-    #DHq = gphist.analysis.get_quantiles(DH,q)/model.DH0
-    DAq = gphist.analysis.get_quantiles(DA[:,1:],q)/model.DC0[1:]
-    print DAq
+    DHq = gphist.analysis.get_quantiles(DH,q,weights=wgt)/model.DH0
+    print DHq
+    #DAq = gphist.analysis.get_quantiles(DA[:,1:],q)/model.DC0[1:]
+    #print DAq
 
 if __name__ == '__main__':
     main()

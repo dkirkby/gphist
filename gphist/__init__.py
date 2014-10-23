@@ -4,4 +4,5 @@
 import process
 import evolution
 import distance
+import posterior
 import analysis
