@@ -23,7 +23,7 @@ class SquaredExponentialGaussianProcess(object):
 		self.hyper_h = hyper_h
 		self.hyper_sigma = hyper_sigma
 
-	def sample(self,num_samples,svalues):
+	def generate_samples(self,num_samples,svalues):
 		"""Generates random samples of our Gaussian process.
 
 		Args:
