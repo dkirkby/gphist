@@ -33,9 +33,6 @@ def main():
 
     # Initialize the distance model.
     model = gphist.distance.HubbleDistanceModel(evol)
-    print evol.zvalues
-    print model.DH0
-    print model.DC0
 
     # Generate samples from the prior.
     samples = prior.generate_samples(args.num_samples,evol.svalues)
@@ -48,6 +45,11 @@ def main():
 
     # Calculate the corresponding comoving angular scale function DA(z).
     DA = gphist.distance.convert_DC_to_DA(DH,DC,args.omega_k)
+
+    q = np.array((0.05,0.5,0.95))
+    #DHq = gphist.analysis.get_quantiles(DH,q)/model.DH0
+    DAq = gphist.analysis.get_quantiles(DA[:,1:],q)/model.DC0[1:]
+    print DAq
 
 if __name__ == '__main__':
     main()
