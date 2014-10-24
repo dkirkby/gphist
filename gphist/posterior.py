@@ -62,17 +62,38 @@ class GaussianPdf1D(GaussianPdf):
 		GaussianPdf.__init__(self,mean,covariance)
 
 class LocalH0Posterior(GaussianPdf1D):
-	"""Represents a posterior on the local value of H0 from Reiss 2011.
+	"""Posterior constraint on the value of H0 determined from local measurements.
+
+	Value of H0 = 74.8 +/- 3.1 is taken from Reiss 2011.
 	"""
 	def __init__(self):
 		self.name = 'Local H0'
 		GaussianPdf1D.__init__(self,74.8,3.1)
 
-	def get_nll(self,DH,DC):
-		"""Calculates -logL for the posterior applied to a set of expansion histories.
+	def get_nll(self,DH,DA):
+		"""Calculate -logL for the posterior applied to a set of expansion histories.
 
-		The prior is applied to c/H(z=0).
+		The posterior is applied to c/H(z=0).
 		"""
 		# Constant is speed of light in km/s. Indexing below is to get shape (n,1) for values.
-		values = 299792.458/DH[:,0:1]
+		values = 299792.458/DH[:,:1]
+		return GaussianPdf1D.get_nll(self,values)
+
+class CMBPosterior(GaussianPdf1D):
+	"""Posterior constraint on the angular scale of CMB temperature fluctuations.
+
+	Value of theta* = (1.04148 +/- 0.00066) x 10^2 taken from Ade 2013.
+	"""
+	def __init__(self):
+		self.name = 'CMB angular scale'
+		GaussianPdf1D.__init__(self,1.04148e-2,0.00066e-2)
+
+	def get_nll(self,DH,DA):
+		"""Calculate -logL for the posterior applied to a set of expansion histories.
+
+		The posterior is applied to rs(z*)/DA(z*) assuming that z* is the last redshift
+		tabulated in DH and DC and using rs(z*) = 144.58 Mpc.
+		"""
+		# Constant is rs(z*). Indexing below is to get shape (n,1) for values.
+		values = 144.58/DA[:,-1:]
 		return GaussianPdf1D.get_nll(self,values)
