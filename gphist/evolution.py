@@ -13,16 +13,14 @@ class LogScale(object):
 
 	LogScale evolution uses s(z) = log(1+z)/log(1+z*) which is a scaled
 	version of -log(a) where a = 1/(1+z) is the scale factor.
+
+	Args:
+		nsteps(int): number of equally spaced steps to use between s=0
+			and s=1.
+		zstar(float): last scattering redshift corresponding to s=1.
 	"""
 
 	def __init__(self,nsteps,zstar):
-		"""Initializes a LogScale evolution variable.
-
-		Args:
-			nsteps(int): number of equally spaced steps to use between s=0
-				and s=1.
-			zstar(float): last scattering redshift corresponding to s=1.
-		"""
 		self.zstar = zstar
 		# Initialize equally spaced values of the evolution variable s.
 		self.svalues = np.linspace(0.,1.,nsteps)

@@ -11,15 +11,13 @@ class SquaredExponentialGaussianProcess(object):
 	k(ds) = h^2 exp(-ds^2/(2 sigma^2)).  The hyperparameters of this process are h
 	and sigma, which establish the characteristic vertical and horizontal length
 	scales, respectively.
+
+	Args:
+		hyper_h(float): vertical scaling hyperparameter.
+		hyper_sigma(float): horizontal scaling hyperparameter.
 	"""
 
 	def __init__(self,hyper_h,hyper_sigma):
-		"""Initializes a squared-exponential Gaussian process generator.
-
-		Args:
-			hyper_h(float): vertical scaling hyperparameter.
-			hyper_sigma(float): horizontal scaling hyperparameter.
-		"""
 		self.hyper_h = hyper_h
 		self.hyper_sigma = hyper_sigma
 

@@ -6,12 +6,15 @@
 Welcome to gphist's documentation!
 ==================================
 
-Contents:
+Something about the package here...
+
+API
+---
 
 .. toctree::
    :maxdepth: 2
 
-
+   src/gphist
 
 Indices and tables
 ==================
@@ -19,4 +22,3 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
-

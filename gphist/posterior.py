@@ -8,19 +8,17 @@ import numpy.linalg
 
 class GaussianPdf(object):
 	"""Represents a multi-dimensional Gaussian probability density function.
+
+	Args:
+		mean(ndarray): 1D array of length npar of mean values.
+		covariance(ndarray): 2D symmetric positive definite covariance matrix
+			of shape (npar,npar).
+
+	Raises:
+		ValueError: dimensions of mean and covariance are incompatible.
+		LinAlgError: covariance matrix is not positive definite.
 	"""
 	def __init__(self,mean,covariance):
-		"""Initializes a new GaussianPdf with a specified mean and covariance.
-
-		Args:
-			mean(ndarray): 1D array of length npar of mean values.
-			covariance(ndarray): 2D symmetric positive definite covariance matrix
-				of shape (npar,npar).
-
-		Raises:
-			ValueError: dimensions of mean and covariance are incompatible.
-			LinAlgError: covariance matrix is not positive definite.
-		"""
 		# Check that the dimensions match or throw a ValueError.
 		dimensions_check = mean.dot(covariance.dot(mean))
 		# Check that the covariance is postive definite or throw a LinAlgError.
@@ -53,14 +51,12 @@ class GaussianPdf(object):
 
 class GaussianPdf1D(GaussianPdf):
 	"""Represents a specialization of GaussianPdf to the 1D case.
+
+	Args:
+		central_value(float): central value of the 1D PDF.
+		sigma(float): RMS spread of the 1D PDF.
 	"""
 	def __init__(self,central_value,sigma):
-		"""Initializes a new GausianPdf1D.
-
-		Args:
-			central_value(float): central value of the 1D PDF.
-			sigma(float): RMS spread of the 1D PDF.
-		"""
 		mean = np.array([central_value])
 		covariance = np.array([[sigma**2]])
 		GaussianPdf.__init__(self,mean,covariance)
@@ -69,8 +65,6 @@ class LocalH0Posterior(GaussianPdf1D):
 	"""Represents a posterior on the local value of H0 from Reiss 2011.
 	"""
 	def __init__(self):
-		"""Initializes a new LocalH0Posterior.
-		"""
 		self.name = 'Local H0'
 		GaussianPdf1D.__init__(self,74.8,3.1)
 

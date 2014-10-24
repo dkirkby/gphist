@@ -29,17 +29,15 @@ def convert_DC_to_DA(DH,DC,omega_k):
 
 class HubbleDistanceModel(object):
 	"""Models expansion history as multiplicative correction to a fiducial DH(z).
+
+	The fiducial DH0(z) is hardcoded to the Planck+WP best fit from Ade 2013.
+
+	Args:
+		evol: evolution parameter to use, which must have a zvalues attribute
+			and implement a get_DC method.
 	"""
 
 	def __init__(self,evol):
-		"""Creates a new HubbleDistanceModel.
-
-		The fiducial DH0(z) is hardcoded to the Planck+WP best fit from Ade 2013.
-
-		Args:
-			evol: evolution parameter to use, which must have a zvalues attribute
-				and implement a get_DC method.
-		"""
 		# Tabulate values of DH(z) for the fiducial model.
 		zp1 = evol.zvalues+1
 		self.DH0 = 4471.844540572792/np.sqrt(0.681619598847103 + zp1**3*(
