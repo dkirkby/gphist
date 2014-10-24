@@ -47,15 +47,18 @@ def main():
     DA = gphist.distance.convert_DC_to_DA(DH,DC,args.omega_k)
 
     # Initialize the posteriors to use.
-    post = gphist.posterior.LocalH0Posterior()
-    nll = post.get_nll(DH,DA)
-    wgt = np.exp(-nll)
+    posteriors = [
+        gphist.posterior.CMBPosterior(),
+        gphist.posterior.LocalH0Posterior()
+    ]
 
-    q = np.array((0.05,0.5,0.95))
-    DHq = gphist.analysis.get_quantiles(DH,q,weights=wgt)/model.DH0
-    print DHq
-    #DAq = gphist.analysis.get_quantiles(DA[:,1:],q)/model.DC0[1:]
-    #print DAq
+    # Calculate -logL for each combination of posterior and prior sample.
+    posteriors_nll = gphist.analysis.calculate_posteriors_nll(DH,DA,posteriors)
+
+    # Build histograms of DH/DH0 and DA/DC0 for each redshift slice and
+    # all permutations of posteriors.
+    DH_hist,DA_hist = gphist.analysis.calculate_distance_histograms(
+        DH,model.DH0,DA,model.DC0,posteriors_nll)
 
 if __name__ == '__main__':
     main()

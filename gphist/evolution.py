@@ -35,20 +35,21 @@ class LogScale(object):
 		"""Converts Hubble distances DH(z) to comoving distances DC(z).
 
 		Performs the integral DC(z) = Integrate[DH(zz),{zz,0,z}] using linear
-		interpolation of DH in s.
+		interpolation of DH in s. Note that the returned array has a different
+		shape from the input array (one less column) since DC(z=0) = 0 is
+		not included.
 
 		Args:
 			DH(ndarray): 2D array of tabulated Hubble distances DH with shape
-				(nsamples,nsteps).
+				(nsamples,nsteps). DH[i,j] is interpreted as the distance to
+				zvalues[j] for sample i.
 
 		Returns:
 			ndarray: 2D array of tabulated comoving distances DC with shape
-				(nsamples,len(s)).
+				(nsamples,nsteps-1). The [i,j] value gives DC at zvalues[j+1].
+				The value DC(z=0) = 0 is not included.
 		"""
 		# Tabulate values of DC(z[i+1]) - DC(z[i]).
 		deltaDC = self.quad_coef2*DH[:,1:] - self.quad_coef1*DH[:,:-1]
 		# Reconstruct DC.
-		DC = np.empty_like(DH)
-		DC[:,0] = 0.
-		np.cumsum(deltaDC,axis=1,out=DC[:,1:])
-		return DC
+		return np.cumsum(deltaDC,axis=1)
