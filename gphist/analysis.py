@@ -25,7 +25,7 @@ def calculate_posteriors_nll(DH,DA,posteriors):
 		nll[ipost] = post.get_nll(DH,DA)
 	return nll
 
-def histogram(data,num_bins,min_value,max_value,weights=None,out=None):
+def histogram(data,num_bins,bin_range,weights=None,out=None):
 	"""Build a histogram with underflow and overflow bins.
 
 	Uses the numpy.histogram function but also accumulates underflow and
@@ -36,10 +36,9 @@ def histogram(data,num_bins,min_value,max_value,weights=None,out=None):
 	Args:
 		data(ndarray): Array of data to histogram.
 		num_bins(int): Number of equally spaced bins to use for each histogram.
-		min_value(float): Minimum data value corresponding to the left edge of
-			the first bin. Values below this are accumulated in an underflow bin.
-		max_value(float): Maximum data value corresponding to the right edge of
-			the last bin. Values above this are accumulated in an overflow bin.
+		bin_range(ndarray): Array of length 2 with binning min,max values to use.
+			Values below or above these limits are accumulated in an underflow
+			or overflow bin.
 		weights(ndarray): Optional array of weights to use. If provided, its
 			length must match the length of data.
 		out(ndarray): Optional array where results should be saved. If this is not
@@ -54,9 +53,9 @@ def histogram(data,num_bins,min_value,max_value,weights=None,out=None):
 			when this is not None.
 
 	Raises:
-		ValueError: the 'out' array provided does not have the expected shape
-			(num_bins+2,).
+		ValueError: the bin_range or out arguments do not have the expected shape.
 	"""
+	min_value,max_value = bin_range
 	if out is None:
 		out = np.empty((num_bins+2,),dtype=np.float64)
 	elif out.shape != (num_bins+2,):
@@ -76,10 +75,32 @@ def histogram(data,num_bins,min_value,max_value,weights=None,out=None):
 		out[-1] = np.sum(weights[over])
 	return out
 
-def calculate_distance_histograms(DH,DH0,DA,DA0,nll,num_bins = 200,min_value=0.,max_value=2.):
+def calculate_distance_histograms(DH,DH0,DA,DA0,nll,num_bins,bin_range):
 	"""Build histograms of DH/DH0 and DA/DA0.
 
 	Calculate histograms for all permutations of posterior weightings.
+
+	Args:
+		DH(ndarray): Array of shape (nsamples,nz) of DH(z) values to use.
+		DH0(ndarray): Array of shape (nz,) used to normalize each DH(z).
+		DA(ndarray): Array of shape (nsamples,nz-1) of DA(z) values to use.
+		DA0(ndarray): Array of shape (nz-1,) used to normalize each DA(z).
+		nll(ndarray): Array of shape (npost,nsamples) containing the nll
+			posterior weights to use.
+		num_bins(int): Number of equally spaced bins to use for each histogram.
+		bin_range(ndarray): Array of length 2 with binning min,max values to use.
+			Values below or above these limits are accumulated in an underflow
+			or overflow bin.
+
+	Returns:
+		tuple: Arrays of histograms for DH/DH0 and DA/DA0 with shapes
+			(nperm,nz,num_bins+2) and (nperm,nz-1,num_bins+2), respectively,
+			where nperm = 2**npost. The mapping between permutations and the
+			permutation index is given by the binary representation of the index.
+			For example, iperm = 5 = 2^0 + 2^2 combines posteriors 0 and 2.
+
+	Raises:
+		AssertionError: Unexpected sizes of DH,DH0,DA,DA0.
 	"""
 	nsamples,nz = DH.shape
 	npost = len(nll)
@@ -101,67 +122,46 @@ def calculate_distance_histograms(DH,DH0,DA,DA0,nll,num_bins = 200,min_value=0.,
 		perm_weights = np.exp(-perm_nll)
 		# Build nz histograms of DH/DH0.
 		for iz in range(nz):
-			histogram(DH[:,iz]/DH0[iz],num_bins,min_value,max_value,
+			histogram(DH[:,iz]/DH0[iz],num_bins,bin_range,
 				out=DH_hist[iperm,iz],weights=perm_weights)
 		# Build nz-1 histograms of DA/DA0.
 		for iz in range(nz-1):
-			histogram(DA[:,iz]/DA0[iz],num_bins,min_value,max_value,
+			histogram(DA[:,iz]/DA0[iz],num_bins,bin_range,
 				out=DA_hist[iperm,iz],weights=perm_weights)
 	return DH_hist,DA_hist
 
-def get_histograms(data,weights=None,num_bins=200,min_value=0.,max_value=2.):
-	"""Build weighted histograms of each column in an array.
+def quantiles(histogram,levels,bin_range,threshold=1e-8):
+	"""Calculate quantiles of a histogram.
 
-	Uses the numpy.histogram function but also accumulates underflow and
-	overflow values. Use the :py:func:`get_quantiles` function to extract quantile
-	levels from the resulting histograms. We use fixed histogram binning to
-	simplify combining histograms from different runs.
-
-	Args:
-		data(ndarray): Array of shape (nrows,ncols) whose columns will
-			be histogrammed.
-		weights(ndarray): Optional array of weights to use with shape (ncols,).
-		num_bins(int): Number of equally spaced bins to use for each histogram.
-		min_value(float): Minimum data value corresponding to the left edge of
-			the first bin. Values below this are accumulated in an underflow bin.
-		max_value(float): Maximum data value corresponding to the right edge of
-			the last bin. Values above this are accumulated in an overflow bin.
-
-	Returns:
-		ndarray: Array of shape (ncols,num_bins+2) containing per-bin sums of
-			weights for column i in row i. The first and last bin contents
-			record underflow and overflow sums of weights, respectively.
+	Raises:
+		ValueError: bin_range does not have 2 elements.
 	"""
-	nrows,ncols = data.shape
-	histograms = np.empty((ncols,num_bins+2),dtype=np.float64)
-	for icol in range(ncols):
-		# Calculate the histogram bin contents, which will be integer if there are no weights.
-		hist,edges = np.histogram(data[:,icol],bins=num_bins,
-			range=(min_value,max_value),weights=weights)
-		# Convert contents to float and offset to make room for underflow bin.
-		histograms[icol,1:-1] = hist.astype(np.float64,copy=False)
-	return histograms
+	# Reconstruct the histogram binning.
+	num_bins = len(histogram)-2
+	min_value,max_value = bin_range
+	bin_edges = np.linspace(min_value,max_value,num_bins+1,endpoint=True)
+	# Build the cummulative distribution function, including the under/overflow bins.
+	cdf = np.cumsum(histogram)
+	cdf /= cdf[-1]
+	# Check that the requested levels lie within the binning range.
+	if np.min(levels) < cdf[0]:
+		raise RuntimeError('Quantile level %f is below binning range' % np.min(levels))
+	if np.max(levels) > cdf[-2]:
+		raise RuntimeError('Quantile level %f is above binning range' % np.max(levels))
+	# Skip almost empty bins so that CDF values are increasing for inverse interpolation.
+	use = np.diff(cdf) > threshold
+	use[0] = True
+	# Interpolate CDF levels to estimate the corresponding bin values.
+	inv_cdf = scipy.interpolate.InterpolatedUnivariateSpline(
+		cdf[use[:-1]],bin_edges[use[:-1]],k=1)
+	return inv_cdf(levels)
 
-def get_quantiles(d,q,weights=None,num_bins=100):
-	"""...
+def calculate_confidence_limits(histograms,levels,bin_range):
+	"""Calculates confidence limits from distributions represented as histograms.
 	"""
-	nd,nz = d.shape
-	quantiles = np.empty((len(q),nz))
-	for iz in range(nz):
-		# Histogram the distance values at this redshift. Use the density option
-		# to ensure that the bin contents are floats.
-		hist,edges = np.histogram(d[:,iz],bins=num_bins,density=True,weights=weights)
-		# Build the CDF from this histogram.
-		cdf = np.empty_like(edges)
-		cdf[0] = 0.
-		np.cumsum(hist,out=cdf[1:])
-		cdf /= cdf[-1]
-		# Linearly interpolate the inverse CDF at the specified quantiles. Remove any
-		# (almost) empty bins from the interpolation data to ensure that the x values
-		# are (sufficiently) increasing.
-		use = np.empty(len(cdf),dtype=bool)
-		use[0] = True
-		use[1:] = np.diff(cdf) > 1e-8
-		inv_cdf = scipy.interpolate.InterpolatedUnivariateSpline(cdf[use],edges[use],k=1)
-		quantiles[:,iz] = inv_cdf(q)
-	return quantiles
+	nhist,nbins = histograms.shape
+	nlevels = len(levels)
+	limits = np.empty((nlevels,nhist))
+	for ihist,hist in enumerate(histograms):
+		limits[:,ihist] = quantiles(hist,levels,bin_range)
+	return limits
