@@ -25,7 +25,7 @@ class GaussianPdf(object):
 		posdef_check = numpy.linalg.cholesky(covariance)
 
 		self.mean = mean
-		self.covariance = covariance
+		self.icov = np.linalg.inv(covariance)
 		# Calculate the constant offset of -logL due to the normalization factors.
 		self.norm = 0.5*len(mean)*np.log(2*math.pi) + 0.5*np.log(np.linalg.det(covariance))
 
@@ -46,7 +46,7 @@ class GaussianPdf(object):
 		"""
 		# The next line will throw a ValueError if values cannot be broadcast.
 		residuals = values - self.mean
-		chisq = np.einsum('...ia,ab,...ib->...i',residuals,self.covariance,residuals)
+		chisq = np.einsum('...ia,ab,...ib->...i',residuals,self.icov,residuals)
 		return self.norm + 0.5*chisq
 
 class GaussianPdf1D(GaussianPdf):
