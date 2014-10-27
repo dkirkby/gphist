@@ -16,23 +16,25 @@ class SquaredExponentialGaussianProcess(object):
 		hyper_h(float): vertical scaling hyperparameter.
 		hyper_sigma(float): horizontal scaling hyperparameter.
 	"""
-
 	def __init__(self,hyper_h,hyper_sigma):
 		self.hyper_h = hyper_h
 		self.hyper_sigma = hyper_sigma
 
-	def generate_samples(self,num_samples,svalues):
+	def generate_samples(self,num_samples,svalues,seed=None):
 		"""Generates random samples of our Gaussian process.
 
 		Args:
-			num_samples(int): number of samples to generate.
-			svalues(ndarray): values of the evolution variable where the process
+			num_samples(int): Number of samples to generate.
+			svalues(ndarray): Values of the evolution variable where the process
 				will be sampled.
+			seed(int): Random seed to use, or use default state if seed is None.
 
 		Returns:
-			ndarray: array with shape (num_samples,len(svalues)) containing the
+			ndarray: Array with shape (num_samples,len(svalues)) containing the
 				generated samples.
 		"""
+		if seed is not None:
+			numpy.random.seed(seed)
 		# Evaluate the kernel for all pairs (s1,s2). This could be optimized to
 		# evaluate only the s1 >= s2 pairs if necessary.
 		s1,s2 = np.meshgrid(svalues,svalues,indexing='ij')

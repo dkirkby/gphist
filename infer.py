@@ -13,6 +13,8 @@ def main():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--num-samples', type = int, default = 1000000,
         help = 'number of samples to generate')
+    parser.add_argument('--seed', type = int, default = 26102014,
+        help = 'random seed to use for sampling the prior')
     parser.add_argument('--num-steps', type = int, default = 50,
         help = 'number of steps in evolution variable to use')
     parser.add_argument('--hyper-h', type = float, default = 0.3,
@@ -45,7 +47,7 @@ def main():
     model = gphist.distance.HubbleDistanceModel(evol)
 
     # Generate samples from the prior.
-    samples = prior.generate_samples(args.num_samples,evol.svalues)
+    samples = prior.generate_samples(args.num_samples,evol.svalues,args.seed)
 
     # Convert each sample into a corresponding tabulated DH(z).
     DH = model.get_DH(samples)
