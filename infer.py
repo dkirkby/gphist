@@ -66,7 +66,6 @@ def main():
 
     # Calculate -logL for each combination of posterior and prior sample.
     posteriors_nll = gphist.analysis.calculate_posteriors_nll(DH,DA,posteriors)
-    print np.max(posteriors_nll,axis=1)
 
     # Build histograms of DH/DH0 and DA/DC0 for each redshift slice and
     # all permutations of posteriors.
