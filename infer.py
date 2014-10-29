@@ -60,7 +60,7 @@ def main():
 
     # Initialize the posteriors to use.
     posteriors = [
-        #gphist.posterior.CMBPosterior(),
+        gphist.posterior.CMBPosterior(),
         gphist.posterior.LocalH0Posterior(),
         gphist.posterior.BAOPosterior('LRG BAO',evol,0.57,20.74,0.69,14.95,0.21,-0.52),
         gphist.posterior.BAOPosterior('Lya BAO',evol,2.3,9.15,1.22,36.46,0.20,-0.38),

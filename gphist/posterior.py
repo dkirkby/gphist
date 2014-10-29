@@ -96,7 +96,7 @@ class LocalH0Posterior(GaussianPdf1D):
 		values = 299792.458/DH[:,:1]
 		return GaussianPdf1D.get_nll(self,values)
 
-class CMBPosterior(GaussianPdf1D):
+class CMBThetaStarPosterior(GaussianPdf1D):
 	"""Posterior constraint on the angular scale of CMB temperature fluctuations.
 
 	Value of theta* = (1.04148 +/- 0.00066) x 10^2 taken from Ade 2013.
@@ -121,6 +121,32 @@ class CMBPosterior(GaussianPdf1D):
 		# Constant is rs(z*). Indexing below is to get shape (n,1) for values.
 		values = 144.58/DA[:,-1:]
 		return GaussianPdf1D.get_nll(self,values)
+
+class CMBPosterior(GaussianPdf):
+	"""Posterior constraint on DH(z*) and DA(z*) from CMB.
+	"""
+	def __init__(self):
+		self.name = 'CMB'
+		zstar = 1090.48
+		mean = np.array([0.1921764,12.74139*(1+zstar)])
+		cov11 = 2.2012293e-6
+		cov12 = 7.87634e-5*(1+zstar)
+		cov22 = 0.0030466538*(1+zstar)**2
+		covariance = np.array([[cov11,cov12],[cov12,cov22]])
+		GaussianPdf.__init__(self,mean,covariance)
+
+	def get_nll(self,DH,DA):
+		"""Calculate -logL for the posterior applied to a set of expansion histories.
+
+		Args:
+			DH(ndarray): Array of shape (nsamples,nz) of DH(z) values to use.
+			DA(ndarray): Array of shape (nsamples,nz-1) of DA(z) values to use.
+
+		Returns:
+			ndarray: Array of -logL values calculated at each input value.
+		"""
+		values = np.vstack([DH[:,-1],DA[:,-1]])
+		return GaussianPdf.get_nll(self,values.T)
 
 class BAOPosterior(GaussianPdf2D):
 	"""Posterior constraint on the parallel and perpendicular scale factors from BAO.
