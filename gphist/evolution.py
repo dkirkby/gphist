@@ -31,6 +31,19 @@ class LogScale(object):
 		self.quad_coef1 = 1 + self.zvalues[:-1] - delta
 		self.quad_coef2 = 1 + self.zvalues[1:] - delta
 
+	def s_of_z(self,z):
+		"""Evaluates the function s(z).
+
+		Automatically broadcasts over a redshift array.
+
+		Args:
+			z(ndarray): redshift where evolution variable s should be evaluated.
+
+		Returns:
+			ndarray: value of evolution variable s(z).
+		"""
+		return np.log(1+z)/np.log(1+self.zstar)
+
 	def get_DC(self,DH):
 		"""Converts Hubble distances DH(z) to comoving distances DC(z).
 

@@ -35,7 +35,6 @@ def main():
         DH_hist[args.priors],levels,bin_range)
     DA_limits = gphist.analysis.calculate_confidence_limits(
         DA_hist[args.priors],levels,bin_range)
-    print DH_limits.shape,DA_limits.shape
 
     fig = plt.figure(figsize=(14,6))
     fig.set_facecolor('white')
