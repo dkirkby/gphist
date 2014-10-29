@@ -82,7 +82,8 @@ def main():
     # Save outputs.
     if args.output:
         np.savez(args.output+'.npz',DH_hist=DH_hist,DA_hist=DA_hist,
-            zevol=evol.zvalues,bin_range=bin_range,posterior_names=posterior_names)
+            DH0=model.DH0,DA0=model.DC0,zevol=evol.zvalues,bin_range=bin_range,
+            posterior_names=posterior_names)
 
 if __name__ == '__main__':
     main()

@@ -27,6 +27,8 @@ def main():
     loaded = np.load(args.input+'.npz')
     DH_hist = loaded['DH_hist']
     DA_hist = loaded['DA_hist']
+    DH0 = loaded['DH0']
+    DA0 = loaded['DA0']
     zevol = loaded['zevol']
     bin_range = loaded['bin_range']
     posterior_names = loaded['posterior_names']
