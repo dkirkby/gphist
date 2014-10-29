@@ -70,7 +70,8 @@ class GaussianPdf2D(GaussianPdf):
 		x2(float): Central value of the second parameter.
 		sigma1(float): RMS spread of the first parameter.
 		sigma2(float): RMS spread of the second parameter.
-		rho12(float): Correlation coefficient between the two parameters.
+		rho12(float): Correlation coefficient between the two parameters. Must be
+			between -1 and +1.
 	"""
 	def __init__(self,x1,sigma1,x2,sigma2,rho12):
 		mean = np.array([x1,x2])
@@ -82,9 +83,12 @@ class LocalH0Posterior(GaussianPdf1D):
 	"""Posterior constraint on the value of H0 determined from local measurements.
 
 	Value of H0 = 74.8 +/- 3.1 is taken from Reiss 2011.
+
+	Args:
+		name(str): Name to associate with this posterior.
 	"""
-	def __init__(self):
-		self.name = 'Local H0'
+	def __init__(self,name):
+		self.name = name
 		GaussianPdf1D.__init__(self,74.8,3.1)
 
 	def get_nll(self,DH,DA):
@@ -100,9 +104,12 @@ class CMBThetaStarPosterior(GaussianPdf1D):
 	"""Posterior constraint on the angular scale of CMB temperature fluctuations.
 
 	Value of theta* = (1.04148 +/- 0.00066) x 10^2 taken from Ade 2013.
+
+	Args:
+		name(str): Name to associate with this posterior.
 	"""
-	def __init__(self):
-		self.name = 'CMB angular scale'
+	def __init__(self,name):
+		self.name = name
 		GaussianPdf1D.__init__(self,1.04148e-2,0.00066e-2)
 
 	def get_nll(self,DH,DA):
@@ -124,9 +131,12 @@ class CMBThetaStarPosterior(GaussianPdf1D):
 
 class CMBPosterior(GaussianPdf):
 	"""Posterior constraint on DH(z*) and DA(z*) from CMB.
+
+	Args:
+		name(str): Name to associate with this posterior.
 	"""
-	def __init__(self):
-		self.name = 'CMB'
+	def __init__(self,name):
+		self.name = name
 		zstar = 1090.48
 		mean = np.array([0.1921764,12.74139*(1+zstar)])
 		cov11 = 2.2012293e-6
@@ -152,6 +162,17 @@ class BAOPosterior(GaussianPdf2D):
 	"""Posterior constraint on the parallel and perpendicular scale factors from BAO.
 
 	Value of rs(zdrag) = 147.36 Mpc is fixed.
+
+	Args:
+		name(str): Name to associate with this posterior.
+		evol: Evolution variable to use for interpolating in redshift.
+		z(double): Redshift where posterior should be evaluated.
+		apar(double): Line-of-sight (parallel) scale factor measured using BAO.
+		sigma_apar(double): RMS error on measured apar.
+		aperp(double): Transverse (perpendicular) scale factor measured using BAO.
+		sigma_aperp(double): RMS error on measured aperp.
+		rho(double): Correlation coefficient between apar and aperp.
+			Must be between -1 and +1.
 	"""
 	def __init__(self,name,evol,z,apar,sigma_apar,aperp,sigma_aperp,rho):
 		self.name = 'BAO'

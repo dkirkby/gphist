@@ -29,6 +29,15 @@ def main():
     DA_hist = loaded['DA_hist']
     zevol = loaded['zevol']
     bin_range = loaded['bin_range']
+    posterior_names = loaded['posterior_names']
+
+    npost = len(posterior_names)
+    if args.priors < 0 or args.priors >= 2**npost:
+        print 'Invalid priors %d (should be in the range 0 - %d)' % (args.priors,2**npost-1)
+        return -1
+    perms = gphist.analysis.get_permutations(npost)
+    priors_name = '+'.join(posterior_names[perms[args.priors]]) or 'None'
+    print '%d = %s' % (args.priors,priors_name)
 
     levels = np.array([0.05,0.5,0.95])
     DH_limits = gphist.analysis.calculate_confidence_limits(

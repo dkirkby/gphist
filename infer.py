@@ -60,11 +60,12 @@ def main():
 
     # Initialize the posteriors to use.
     posteriors = [
-        gphist.posterior.CMBPosterior(),
-        gphist.posterior.LocalH0Posterior(),
-        gphist.posterior.BAOPosterior('LRG BAO',evol,0.57,20.74,0.69,14.95,0.21,-0.52),
-        gphist.posterior.BAOPosterior('Lya BAO',evol,2.3,9.15,1.22,36.46,0.20,-0.38),
+        gphist.posterior.CMBPosterior('CMB'),
+        gphist.posterior.LocalH0Posterior('H0'),
+        gphist.posterior.BAOPosterior('LRG',evol,0.57,20.74,0.69,14.95,0.21,-0.52),
+        gphist.posterior.BAOPosterior('Lya',evol,2.3,9.15,1.22,36.46,0.20,-0.38),
     ]
+    posterior_names = np.array([p.name for p in posteriors])
 
     # Calculate -logL for each combination of posterior and prior sample.
     posteriors_nll = gphist.analysis.calculate_posteriors_nll(DH,DA,posteriors)
@@ -81,7 +82,7 @@ def main():
     # Save outputs.
     if args.output:
         np.savez(args.output+'.npz',DH_hist=DH_hist,DA_hist=DA_hist,
-            zevol=evol.zvalues,bin_range=bin_range)
+            zevol=evol.zvalues,bin_range=bin_range,posterior_names=posterior_names)
 
 if __name__ == '__main__':
     main()

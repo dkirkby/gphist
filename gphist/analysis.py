@@ -75,6 +75,23 @@ def histogram(data,num_bins,bin_range,weights=None,out=None):
 		out[-1] = np.sum(weights[over])
 	return out
 
+def get_permutations(n):
+	"""Builds an array of permutations.
+
+	Args:
+		n(int): Length of the array to permute.
+
+	Returns:
+		ndarray: Array of booleans with shape (2*n,n). Element (i,j) is True if
+			element j belongs to the i-th permutation.
+	"""
+	nperm = 2**n
+	bits = 2**np.arange(n)
+	mask = np.empty((nperm,n),dtype=bool)
+	for iperm in range(nperm):
+		mask[iperm] = np.bitwise_and(iperm,bits) > 0
+	return mask
+
 def calculate_distance_histograms(DH,DH0,DA,DA0,nll,num_bins,bin_range):
 	"""Build histograms of DH/DH0 and DA/DA0.
 
@@ -114,11 +131,10 @@ def calculate_distance_histograms(DH,DH0,DA,DA0,nll,num_bins,bin_range):
 	DH_hist = np.empty((nperm,nz,num_bins+2))
 	DA_hist = np.empty((nperm,nz-1,num_bins+2))
 	# Loop over permutations.
-	bits = 2**np.arange(npost)
-	for iperm in range(nperm):
+	perms = get_permutations(npost)
+	for iperm,perm in enumerate(perms):
 		# Calculate weights for this permutation.
-		mask = np.bitwise_and(iperm,bits) > 0
-		perm_nll = np.sum(nll[mask],axis=0)  # Returns zero when mask entries are all False.
+		perm_nll = np.sum(nll[perm],axis=0)  # Returns zero when perm entries are all False.
 		perm_weights = np.exp(-perm_nll)
 		# Build nz histograms of DH/DH0.
 		for iz in range(nz):
