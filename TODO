@@ -1,6 +1,6 @@
 TODO:
 
-- Add plot of H(z)/(1+z) on linear z scale from 0-3. No new histograms needed for this?
+- Finish docstrings.
 - Save some random samples of each posterior from infer.py and optionally display them in plot.py
 - Option to write plots for all combinations of posteriors in plot.py in batch mode, together with a json file to configure web display of plots
 - Add javascript and html to display plots

@@ -77,7 +77,7 @@ def main():
         DH,model.DH0,DA,model.DC0,posteriors_nll,args.num_bins,bin_range)
 
     # Select some random realizations for each combination of posteriors.
-    # ...
+    realizations = gphist.analysis.select_random_realizations(DH,DA,posteriors_nll,args.num_save)
 
     # Save outputs.
     if args.output:

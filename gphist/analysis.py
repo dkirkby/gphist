@@ -181,3 +181,23 @@ def calculate_confidence_limits(histograms,levels,bin_range):
 	for ihist,hist in enumerate(histograms):
 		limits[:,ihist] = quantiles(hist,levels,bin_range)
 	return limits
+
+def select_random_realizations(DH,DA,nll,n):
+	"""Select random realizations of generated expansion histories.
+
+	Args:
+		DH(ndarray): Array of shape (nsamples,nz) of DH(z) values to use.
+		DA(ndarray): Array of shape (nsamples,nz-1) of DA(z) values to use.
+		nll(ndarray): Array of shape (npost,nsamples) containing the nll
+			posterior weights to use.
+		n(int): Number of random rows to return.
+
+	Returns:
+		ndarray: Array of shape (n,ncols) containing the selected random rows. Note that
+			a row might be selected more than once.
+	"""
+	cdf = np.cumsum(np.exp(-nll))
+	print cdf.shape
+	pick = np.random.uniform(low=0.,high=cdf[-1],size=n)
+	rows = cdf > pick
+	print rows
