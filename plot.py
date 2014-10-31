@@ -18,6 +18,8 @@ def main():
         help = 'posteriors permutation index to use')
     parser.add_argument('--level', type = float, default = 0.9,
         help = 'confidence level to plot')
+    parser.add_argument('--no-examples', action = 'store_true',
+        help = 'do not show examples of random realizations of DH(z) and DA(z)')
     parser.add_argument('--zmax', type = float, default = 3.0,
         help = 'maximum redshift to display on H(z)/(1+z) plot')
     parser.add_argument('--save', type = str, default = None,
@@ -27,6 +29,7 @@ def main():
     if args.input is None:
         print 'Missing required input arg.'
         return -1
+    show_examples = not args.no_examples
 
     loaded = np.load(args.input+'.npz')
     DH_hist = loaded['DH_hist']
@@ -35,6 +38,8 @@ def main():
     DA0 = loaded['DA0']
     zevol = loaded['zevol']
     bin_range = loaded['bin_range']
+    DH_realizations = loaded['DH_realizations']
+    DA_realizations = loaded['DA_realizations']
     posterior_names = loaded['posterior_names']
 
     npost = len(posterior_names)
@@ -51,8 +56,10 @@ def main():
     DA_limits = gphist.analysis.calculate_confidence_limits(
         DA_hist[args.posteriors],[args.level],bin_range)
 
-    # Calculate the corresponding limits on acceleration H(z)/(1+z).
-    accel_limits = 299792.458/DH_limits/DH0/(1+zevol)
+    # Calculate the corresponding limits and realizations acceleration H(z)/(1+z).
+    clight = 299792.458
+    accel_limits = clight/DH_limits/DH0/(1+zevol)
+    accel_realizations = clight/DH_realizations[args.posteriors]/(1+zevol)
 
     # Find first z index beyond H(z)/(1+z) plot.
     iend = 1+np.argmax(zevol > args.zmax)
@@ -69,6 +76,8 @@ def main():
     plt.plot(1+zevol,DH_limits[0],'b--')
     plt.plot(1+zevol,DH_limits[1],'b-')
     plt.plot(1+zevol,DH_limits[2],'b--')
+    if show_examples:
+        plt.plot(1+zevol,(DH_realizations[args.posteriors]/DH0).T,'r',alpha=0.5)
     plt.xlabel('log(1+z)')
     plt.ylabel('DH(z)/DH0(z)')
 
@@ -81,6 +90,8 @@ def main():
     plt.plot(1+zevol[1:],DA_limits[0],'b--')
     plt.plot(1+zevol[1:],DA_limits[1],'b-')
     plt.plot(1+zevol[1:],DA_limits[2],'b--')
+    if show_examples:
+        plt.plot(1+zevol[1:],(DA_realizations[args.posteriors]/DA0).T,'r',alpha=0.5)
     plt.xlabel('log(1+z)')
     plt.ylabel('DA(z)/DA0(z)')
 
@@ -94,8 +105,10 @@ def main():
     plt.plot(zevol[:iend],accel_limits[0,:iend],'b--')
     plt.plot(zevol[:iend],accel_limits[1,:iend],'b-')
     plt.plot(zevol[:iend],accel_limits[2,:iend],'b--')
+    if show_examples:
+        plt.plot(zevol[:iend],accel_realizations[:,:iend].T,'r',alpha=0.5)
     plt.xlabel('z')
-    plt.ylabel('H(z)/(1+z)')
+    plt.ylabel('H(z)/(1+z) (Mpc)')
 
     if args.save:
         plt.savefig(args.save)
