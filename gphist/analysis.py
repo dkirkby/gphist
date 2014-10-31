@@ -163,6 +163,10 @@ def quantiles(histogram,quantile_levels,bin_range,threshold=1e-8):
 		threshold(float): Any histogram bins whose normalized contents fall below this
 			threshold will be ignored, to minimize loss of precision in the interpolation.
 
+	Returns:
+		ndarray: Array of estimated abscissa values for each input level. Each value will
+			be in the range specified by bin_range.
+
 	Raises:
 		ValueError: bin_range does not have 2 elements.
 		RuntimeError: Some levels fall outside of bin_range so cannot be calculated.
@@ -208,13 +212,12 @@ def calculate_confidence_limits(histograms,confidence_levels,bin_range):
 	nhist,nbins = histograms.shape
 	lower_quantiles = np.sort(0.5*(1. - np.array(confidence_levels)))
 	quantile_levels = np.concatenate((lower_quantiles,[0.5],1-lower_quantiles[::-1]))
-	print quantile_levels
 	limits = np.empty((len(quantile_levels),nhist))
 	for ihist,hist in enumerate(histograms):
 		limits[:,ihist] = quantiles(hist,quantile_levels,bin_range)
 	return limits
 
-def select_random_realizations(DH,DA,nll,n):
+def select_random_realizations(DH,DA,nll,num_realizations,print_warnings=True):
 	"""Select random realizations of generated expansion histories.
 
 	Args:
@@ -222,14 +225,45 @@ def select_random_realizations(DH,DA,nll,n):
 		DA(ndarray): Array of shape (nsamples,nz-1) of DA(z) values to use.
 		nll(ndarray): Array of shape (npost,nsamples) containing the nll
 			posterior weights to use.
-		n(int): Number of random rows to return.
+		num_realizations(int): Number of random rows to return.
+		print_warnings(bool): Print a warning for any posterior permutation
+			whose selected realizations include repeats.
 
 	Returns:
-		ndarray: Array of shape (n,ncols) containing the selected random rows. Note that
-			a row might be selected more than once.
+		tuple: Arrays of random realizations of DH and DA, with shapes
+			(nperm,num_realizations,nz) and (nperm,num_realizations,nz-1),
+			respectively, where nperm = 2**npost is the total number of
+			posterior permutations. Note that a realization might be selected
+			more than once. Use the print_warnings argument to flag this.
+
+	Raises:
+		AssertionError: Unexpected sizes of DH,DA, or nll.
 	"""
-	cdf = np.cumsum(np.exp(-nll))
-	print cdf.shape
-	pick = np.random.uniform(low=0.,high=cdf[-1],size=n)
-	rows = cdf > pick
-	print rows
+	nsamples,nz = DH.shape
+	npost = len(nll)
+	# Check sizes.
+	assert DA.shape == (nsamples,nz-1)
+	assert nll.shape == (npost,nsamples)
+	# Allocate result arrays.
+	nperm = 2**npost
+	DH_realizations = np.empty((nperm,num_realizations,nz))
+	DA_realizations = np.empty((nperm,num_realizations,nz-1))
+	# Generate a random CDF value for each realization.
+	random_levels = np.random.uniform(low=0.,high=1.,size=num_realizations)
+	# Loop over posterior permutations.
+	perms = get_permutations(npost)
+	for iperm,perm in enumerate(perms):
+		# Calculate weights for this permutation.
+		perm_nll = np.sum(nll[perm],axis=0)  # Returns zero when perm entries are all False.
+		perm_weights = np.exp(-perm_nll)
+		perm_cdf = np.cumsum(perm_weights)
+		perm_cdf /= perm_cdf[-1]
+		perm_rows = np.argmax(perm_cdf > random_levels[:,np.newaxis],axis=1)
+		if print_warnings:
+			num_unique = np.unique(perm_rows).size
+			if num_unique < num_realizations:
+				print 'WARNING: only %d of %d realizations are unique for permutation %d' % (
+					num_unique,num_realizations,iperm)
+		DH_realizations[iperm] = DH[perm_rows]
+		DA_realizations[iperm] = DA[perm_rows]
+	return DH_realizations,DA_realizations

@@ -77,12 +77,14 @@ def main():
         DH,model.DH0,DA,model.DC0,posteriors_nll,args.num_bins,bin_range)
 
     # Select some random realizations for each combination of posteriors.
-    realizations = gphist.analysis.select_random_realizations(DH,DA,posteriors_nll,args.num_save)
+    DH_realizations,DA_realizations = gphist.analysis.select_random_realizations(
+        DH,DA,posteriors_nll,args.num_save)
 
     # Save outputs.
     if args.output:
         np.savez(args.output+'.npz',DH_hist=DH_hist,DA_hist=DA_hist,
             DH0=model.DH0,DA0=model.DC0,zevol=evol.zvalues,bin_range=bin_range,
+            DH_realizations=DH_realizations,DA_realizations=DA_realizations,
             posterior_names=posterior_names)
 
 if __name__ == '__main__':
