@@ -130,18 +130,24 @@ class CMBThetaStarPosterior(GaussianPdf1D):
 		return GaussianPdf1D.get_nll(self,values)
 
 class CMBPosterior(GaussianPdf):
-	"""Posterior constraint on DH(z*) and DA(z*) from CMB.
+	"""Posterior constraint on DH(zref) and DA(zref) from CMB with zref ~ z*.
 
 	Args:
 		name(str): Name to associate with this posterior.
+		evol: Evolution variable to use for interpolating in redshift. The
+			constraints will be applied at the redshift evol.zvalues[-1].
+		DH(float): Value of DH(zref) at zref=evol.zvalues[-1].
+		DA1pz(float): Value of DA(zref)/(1+zref) at zref=evol.zvalues[-1].
+		cov11(float): Variance of DH(zref).
+		cov12(float): Covariance of DH(zref) and DA(zref)/(1+zref).
+		cov22(float): Variance of DA(zref)/(1+zref).
 	"""
-	def __init__(self,name):
+	def __init__(self,name,evol,DH,DA1pz,cov11,cov12,cov22):
 		self.name = name
-		zstar = 1090.48
-		mean = np.array([0.1921764,12.74139*(1+zstar)])
-		cov11 = 2.2012293e-6
-		cov12 = 7.87634e-5*(1+zstar)
-		cov22 = 0.0030466538*(1+zstar)**2
+		zref = evol.zvalues[-1]
+		mean = np.array([DH,DA1pz*(1+zref)])
+		cov12 *= (1+zref)
+		cov22 *= (1+zref)**2
 		covariance = np.array([[cov11,cov12],[cov12,cov22]])
 		GaussianPdf.__init__(self,mean,covariance)
 
@@ -175,7 +181,7 @@ class BAOPosterior(GaussianPdf2D):
 			Must be between -1 and +1.
 	"""
 	def __init__(self,name,evol,z,apar,sigma_apar,aperp,sigma_aperp,rho):
-		self.name = 'BAO'
+		self.name = name
 		self.z = z
 		self.s = evol.s_of_z(z)
 		self.evol = evol

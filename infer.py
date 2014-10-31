@@ -19,12 +19,12 @@ def main():
         help = 'number of steps in evolution variable to use')
     parser.add_argument('--hyper-h', type = float, default = 0.3,
         help = 'vertical scale hyperparameter value to use')
-    parser.add_argument('--hyper-sigma', type = float, default = 0.14295333304236352,
+    parser.add_argument('--hyper-sigma', type = float, default = 0.14,
         help = 'horizontal scale hyperparameter value to use')
     parser.add_argument('--omega-k', type = float, default =0.,
         help = 'curvature parameter')
     parser.add_argument('--zstar', type = float, default = 1090.48,
-        help = 'redshift of last scattering')
+        help = 'nominal redshift of last scattering')
     parser.add_argument('--num-bins', type = int, default = 2000,
         help = 'number of bins to use for histogramming DH/DH0 and DA/DA0')
     parser.add_argument('--min-ratio', type = float, default = 0.,
@@ -60,10 +60,11 @@ def main():
 
     # Initialize the posteriors to use.
     posteriors = [
-        gphist.posterior.CMBPosterior('CMB'),
         gphist.posterior.LocalH0Posterior('H0'),
         gphist.posterior.BAOPosterior('LRG',evol,0.57,20.74,0.69,14.95,0.21,-0.52),
         gphist.posterior.BAOPosterior('Lya',evol,2.3,9.15,1.22,36.46,0.20,-0.38),
+        gphist.posterior.CMBPosterior('CMB',evol,0.1921764,0.1274139e2,
+            2.2012293e-06,7.87634e-05,0.0030466538),
     ]
     posterior_names = np.array([p.name for p in posteriors])
 

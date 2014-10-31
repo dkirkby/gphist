@@ -1,9 +1,10 @@
 """Cosmological evolution variables.
 
 Variables are defined by a function s(z) that must be invertible and increase
-monotonically from s(0) = 0 to s(z*) = 1, where z* is the redshift of last scattering.
-The function s(z) and its inverse can, in general, depend on the expansion history
-and geometry, as encapsulated in the distance functions DH(z) and DA(z).
+monotonically from s(0) = 0 to s(zmax) = 1, where usually zmax ~ z*, the redshift
+of last scattering. The function s(z) and its inverse z(s) are assumed to be
+independent of the expansion history, for efficiency, but this could probably be
+relaxed if necessary.
 """
 
 import numpy as np
@@ -11,38 +12,50 @@ import numpy as np
 class LogScale(object):
 	"""Represents evolution using the logarithm of the scale factor a(t).
 
-	LogScale evolution uses s(z) = log(1+z)/log(1+z*) which is a scaled
+	LogScale evolution uses s(z) = log(1+z)/log(1+zmax) which is a scaled
 	version of -log(a) where a = 1/(1+z) is the scale factor.
 
 	Args:
-		nsteps(int): number of equally spaced steps to use between s=0
+		nsteps(int): Number of equally spaced steps to use between s=0
 			and s=1.
-		zstar(float): last scattering redshift corresponding to s=1.
+		zmax(float): Maximum redshift corresponding to s=1.
 	"""
-
-	def __init__(self,nsteps,zstar):
-		self.zstar = zstar
+	def __init__(self,nsteps,zmax):
+		self.zmax = zmax
 		# Initialize equally spaced values of the evolution variable s.
 		self.svalues = np.linspace(0.,1.,nsteps)
 		# Calculate the corresponding zvalues for the specified z*.
-		self.zvalues = np.power(1+zstar,self.svalues) - 1
+		self.zvalues = self.z_of_s(self.svalues)
 		# Initialize the quadrature coefficients needed by get_DC.
-		delta = np.diff(self.zvalues)/np.diff(self.svalues)/np.log(1+zstar)
+		delta = np.diff(self.zvalues)/np.diff(self.svalues)/np.log(1+zmax)
 		self.quad_coef1 = 1 + self.zvalues[:-1] - delta
 		self.quad_coef2 = 1 + self.zvalues[1:] - delta
 
 	def s_of_z(self,z):
-		"""Evaluates the function s(z).
+		"""Evaluate the function s(z).
 
-		Automatically broadcasts over a redshift array.
+		Automatically broadcasts over an input array.
 
 		Args:
-			z(ndarray): redshift where evolution variable s should be evaluated.
+			z(ndarray): Array of redshifts for calculating s(z).
 
 		Returns:
-			ndarray: value of evolution variable s(z).
+			ndarray: Array of evolution variable values s(z).
 		"""
-		return np.log(1+z)/np.log(1+self.zstar)
+		return np.log(1+z)/np.log(1+self.zmax)
+
+	def z_of_s(self,s):
+		"""Evaluate the inverse function z(s).
+
+		Automatically broadcasts over an input array.
+
+		Args:
+			s(ndarray): Array of evolution variable values for calculating z(s).
+
+		Returns:
+			ndarray: Array of redshifts z(s).
+		"""
+		return np.power(1+self.zmax,s) - 1
 
 	def get_DC(self,DH):
 		"""Converts Hubble distances DH(z) to comoving distances DC(z).
