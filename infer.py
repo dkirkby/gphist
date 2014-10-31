@@ -63,8 +63,10 @@ def main():
         gphist.posterior.LocalH0Posterior('H0'),
         gphist.posterior.BAOPosterior('LRG',evol,0.57,20.74,0.69,14.95,0.21,-0.52),
         gphist.posterior.BAOPosterior('Lya',evol,2.3,9.15,1.22,36.46,0.20,-0.38),
-        gphist.posterior.CMBPosterior('CMB',evol,0.1921764,0.1274139e2,
-            2.2012293e-06,7.87634e-05,0.0030466538),
+        #gphist.posterior.CMBPosterior('CMB',evol,0.1921764,0.1274139e2,
+        #    2.2012293e-06,7.87634e-05,0.0030466538),
+        gphist.posterior.CMBPosterior('CMB',evol,0.1835618,0.1204209e2,
+            6.0964331e-05,0.00465422,0.36262126),
     ]
     posterior_names = np.array([p.name for p in posteriors])
 
