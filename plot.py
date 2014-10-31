@@ -16,6 +16,8 @@ def main():
         help = 'name of input file to read (extension .npz will be added)')
     parser.add_argument('--posteriors',type=int, default = 0,
         help = 'posteriors permutation index to use')
+    parser.add_argument('--level', type = float, default = 0.9,
+        help = 'confidence level to plot')
     parser.add_argument('--zmax', type = float, default = 3.0,
         help = 'maximum redshift to display on H(z)/(1+z) plot')
     parser.add_argument('--save', type = str, default = None,
@@ -44,11 +46,10 @@ def main():
     posteriors_name = '+'.join(posterior_names[perms[args.posteriors]]) or 'None'
     print '%d = %s' % (args.posteriors,posteriors_name)
 
-    levels = np.array([0.05,0.5,0.95])
     DH_limits = gphist.analysis.calculate_confidence_limits(
-        DH_hist[args.posteriors],levels,bin_range)
+        DH_hist[args.posteriors],[args.level],bin_range)
     DA_limits = gphist.analysis.calculate_confidence_limits(
-        DA_hist[args.posteriors],levels,bin_range)
+        DA_hist[args.posteriors],[args.level],bin_range)
 
     # Calculate the corresponding limits on acceleration H(z)/(1+z).
     accel_limits = 299792.458/DH_limits/DH0/(1+zevol)

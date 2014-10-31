@@ -146,40 +146,72 @@ def calculate_distance_histograms(DH,DH0,DA,DA0,nll,num_bins,bin_range):
 				out=DA_hist[iperm,iz],weights=perm_weights)
 	return DH_hist,DA_hist
 
-def quantiles(histogram,levels,bin_range,threshold=1e-8):
+def quantiles(histogram,quantile_levels,bin_range,threshold=1e-8):
 	"""Calculate quantiles of a histogram.
+
+	The quantiles are estimated by inverse linear interpolation of the cummulative
+	histogram. It is probably possible to vectorize this algorithm over histograms
+	if there is a bottleneck here.
+
+	Args:
+		histogram(ndarray): Array of nbins+2 histogram contents, with bins [0] and [-1]
+			containing under- and overflow contents, respectively.
+		quantile_levels(ndarray): Array of quantile levels to calculate. Must be in the
+			range (0,1) but do not need to be sorted.
+		bin_range(ndarray): Array of length 2 containing the [min,max) range corresponding
+			to the histogram contents in bins [1:-1].
+		threshold(float): Any histogram bins whose normalized contents fall below this
+			threshold will be ignored, to minimize loss of precision in the interpolation.
 
 	Raises:
 		ValueError: bin_range does not have 2 elements.
+		RuntimeError: Some levels fall outside of bin_range so cannot be calculated.
 	"""
 	# Reconstruct the histogram binning.
 	num_bins = len(histogram)-2
-	min_value,max_value = bin_range
+	min_value,max_value = bin_range # Raises ValueError if there are not exactly 2 values to unpack.
 	bin_edges = np.linspace(min_value,max_value,num_bins+1,endpoint=True)
 	# Build the cummulative distribution function, including the under/overflow bins.
 	cdf = np.cumsum(histogram)
 	cdf /= cdf[-1]
 	# Check that the requested levels lie within the binning range.
-	if np.min(levels) < cdf[0]:
+	if np.min(quantile_levels) < cdf[0]:
 		raise RuntimeError('Quantile level %f is below binning range' % np.min(levels))
-	if np.max(levels) > cdf[-2]:
+	if np.max(quantile_levels) > cdf[-2]:
 		raise RuntimeError('Quantile level %f is above binning range' % np.max(levels))
 	# Skip almost empty bins so that CDF values are increasing for inverse interpolation.
 	use = np.diff(cdf) > threshold
 	use[0] = True
-	# Interpolate CDF levels to estimate the corresponding bin values.
+	# Linearly interpolate CDF levels to estimate the corresponding bin values.
 	inv_cdf = scipy.interpolate.InterpolatedUnivariateSpline(
 		cdf[use[:-1]],bin_edges[use[:-1]],k=1)
-	return inv_cdf(levels)
+	return inv_cdf(quantile_levels)
 
-def calculate_confidence_limits(histograms,levels,bin_range):
+def calculate_confidence_limits(histograms,confidence_levels,bin_range):
 	"""Calculates confidence limits from distributions represented as histograms.
+
+	The band corresponding to each confidence level CL is given by a histogram's
+	quantile levels (1-CL)/2 and 1-(1-CL)/2.
+
+	Args:
+		histograms(ndarray): Array of shape (nhist,nbins+2) containing nhist histograms with
+			identical binning and including under- and overflow bins.
+		confidence_levels(ndarray): Array of confidence levels to calculate.
+		bin_range(ndarray): Array of length 2 containing the [min,max) range corresponding
+			to the histogram contents in bins [1:-1].
+
+	Returns:
+		ndarray: Array of shape (2*ncl+1,nhist) where elements [i,j] and [-i,j] give the
+			limits of the confidence band for confidence_levels[i] of histograms[j], and
+			element [ncl,j] gives the median for histograms[j].
 	"""
 	nhist,nbins = histograms.shape
-	nlevels = len(levels)
-	limits = np.empty((nlevels,nhist))
+	lower_quantiles = np.sort(0.5*(1. - np.array(confidence_levels)))
+	quantile_levels = np.concatenate((lower_quantiles,[0.5],1-lower_quantiles[::-1]))
+	print quantile_levels
+	limits = np.empty((len(quantile_levels),nhist))
 	for ihist,hist in enumerate(histograms):
-		limits[:,ihist] = quantiles(hist,levels,bin_range)
+		limits[:,ihist] = quantiles(hist,quantile_levels,bin_range)
 	return limits
 
 def select_random_realizations(DH,DA,nll,n):
