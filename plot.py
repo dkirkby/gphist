@@ -64,7 +64,8 @@ def main():
     # Find first z index beyond H(z)/(1+z) plot.
     iend = 1+np.argmax(zevol > args.zmax)
 
-    fig = plt.figure(figsize=(14,12))
+    fig = plt.figure(figsize=(12,8))
+    fig.subplots_adjust(left=0.06,bottom=0.07,right=0.98,top=0.99,wspace=0.15,hspace=0.18)
     fig.set_facecolor('white')
 
     plt.subplot(2,2,1)
@@ -78,8 +79,8 @@ def main():
     plt.plot(1+zevol,DH_limits[2],'b--')
     if show_examples:
         plt.plot(1+zevol,(DH_realizations[args.posteriors]/DH0).T,'r',alpha=0.5)
-    plt.xlabel('log(1+z)')
-    plt.ylabel('DH(z)/DH0(z)')
+    plt.xlabel(r'$log(1+z)$')
+    plt.ylabel(r'$DH(z)/DH_0(z)$')
 
     plt.subplot(2,2,2)
     plt.xscale('log')
@@ -92,8 +93,8 @@ def main():
     plt.plot(1+zevol[1:],DA_limits[2],'b--')
     if show_examples:
         plt.plot(1+zevol[1:],(DA_realizations[args.posteriors]/DA0).T,'r',alpha=0.5)
-    plt.xlabel('log(1+z)')
-    plt.ylabel('DA(z)/DA0(z)')
+    plt.xlabel(r'$log(1+z)$')
+    plt.ylabel(r'$DA(z)/DA_0(z)$')
 
     plt.subplot(2,2,3)
     plt.xscale('linear')
@@ -107,8 +108,8 @@ def main():
     plt.plot(zevol[:iend],accel_limits[2,:iend],'b--')
     if show_examples:
         plt.plot(zevol[:iend],accel_realizations[:,:iend].T,'r',alpha=0.5)
-    plt.xlabel('z')
-    plt.ylabel('H(z)/(1+z) (Mpc)')
+    plt.xlabel(r'$z$')
+    plt.ylabel(r'$H(z)/(1+z)$ (Mpc)')
 
     if args.save:
         plt.savefig(args.save)
