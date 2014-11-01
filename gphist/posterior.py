@@ -100,6 +100,37 @@ class LocalH0Posterior(GaussianPdf1D):
 		values = 299792.458/DH[:,:1]
 		return GaussianPdf1D.get_nll(self,values)
 
+class DHPosterior(GaussianPdf1D):
+	"""Posterior constraint on DH(z).
+
+	Args:
+		name(str): Name to associate with this posterior.
+		evol: Evolution variable to use for interpolating in redshift.
+		z(float): Redshift of posterior constraint.
+		DH(float): Central value of DH(z).
+		DH_error(float): RMS error on DH(z).
+	"""
+	def __init__(self,name,evol,z,DH,DH_error):
+		self.name = name
+		self.s = evol.s_of_z(z)
+		self.evol = evol
+		GaussianPdf1D.__init__(self,DH,DH_error)
+
+	def get_nll(self,DH,DA):
+		"""Calculate -logL for the posterior applied to a set of expansion histories.
+
+		Args:
+			DH(ndarray): Array of shape (nsamples,nz) of DH(z) values to use.
+			DA(ndarray): Array of shape (nsamples,nz-1) of DA(z) values to use.
+
+		Returns:
+			ndarray: Array of -logL values calculated at each input value.
+		"""
+		DH_interpolator = scipy.interpolate.interp1d(self.evol.svalues,DH)
+		DA_interpolator = scipy.interpolate.interp1d(self.evol.svalues[1:],DA)
+		values = DH_interpolator(self.s)
+		return GaussianPdf1D.get_nll(self,values[:,np.newaxis])
+
 class CMBThetaStarPosterior(GaussianPdf1D):
 	"""Posterior constraint on the angular scale of CMB temperature fluctuations.
 
@@ -182,7 +213,6 @@ class BAOPosterior(GaussianPdf2D):
 	"""
 	def __init__(self,name,evol,z,apar,sigma_apar,aperp,sigma_aperp,rho):
 		self.name = name
-		self.z = z
 		self.s = evol.s_of_z(z)
 		self.evol = evol
 		self.rs_zdrag = 147.36
