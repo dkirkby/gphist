@@ -10,6 +10,8 @@ import matplotlib.pyplot as plt
 
 import gphist
 
+clight = 299792.458
+
 def main():
     # Parse command-line arguments.
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -49,8 +51,8 @@ def main():
         return -1
 
     # Do we have anything to plot?
-    num_rows = args.full + args.zoom + args.dark_energy
-    if num_rows == 0:
+    num_plot_rows = args.full + args.zoom + args.dark_energy
+    if num_plot_rows == 0:
         print 'No plots selected.'
         return 0
     show_examples = not args.no_examples
@@ -91,67 +93,115 @@ def main():
 
         print '%d : %s' % (iperm,name)
 
-        # Calculate the confidence bands from the combined histograms.
-        DH_limits = gphist.analysis.calculate_confidence_limits(
+        # Calculate the confidence bands of DH/DH0 and DA/DA0.
+        DH_ratio_limits = gphist.analysis.calculate_confidence_limits(
             DH_hist[iperm],[args.level],bin_range)
-        DA_limits = gphist.analysis.calculate_confidence_limits(
+        DA_ratio_limits = gphist.analysis.calculate_confidence_limits(
             DA_hist[iperm],[args.level],bin_range)
 
-        # Calculate the corresponding limits and realizations acceleration H(z)/(1+z).
-        clight = 299792.458
-        accel_limits = clight/DH_limits/DH0/(1+zevol)
-        if show_examples:
-            accel_realizations = clight/DH_realizations[iperm]/(1+zevol)
+        # Convert to limits on DH, DA.
+        DH_limits = DH_ratio_limits*DH0
+        DA_limits = DA_ratio_limits*DA0
 
         # Find first z index beyond H(z)/(1+z) plot.
         iend = 1+np.argmax(zevol > args.zmax)
 
-        fig = plt.figure(name,figsize=(12,8))
+        fig = plt.figure(name,figsize=(12,4*num_plot_rows))
         fig.subplots_adjust(left=0.06,bottom=0.07,right=0.98,top=0.99,wspace=0.15,hspace=0.18)
         fig.set_facecolor('white')
+        irow = 0
 
-        plt.subplot(2,2,1)
-        plt.xscale('log')
-        plt.grid(True)
-        plt.xlim([1.,1000.])
-        plt.ylim([0.5,1.7])
-        plt.fill_between(1+zevol,DH_limits[0],DH_limits[-1],facecolor='blue',alpha=0.25)
-        plt.plot(1+zevol,DH_limits[0],'b--')
-        plt.plot(1+zevol,DH_limits[1],'b-')
-        plt.plot(1+zevol,DH_limits[2],'b--')
-        if show_examples:
-            plt.plot(1+zevol,(DH_realizations[iperm]/DH0).T,'r',alpha=0.5)
-        plt.xlabel(r'$1+z$')
-        plt.ylabel(r'$DH(z)/DH_0(z)$')
+        # Plot evolution of DH/DH0, DA/DA0 over full redshift range.
+        if args.full:
 
-        plt.subplot(2,2,2)
-        plt.xscale('log')
-        plt.grid(True)
-        plt.xlim([1.,1000.])
-        plt.ylim([0.5,1.7])
-        plt.fill_between(1+zevol[1:],DA_limits[0],DA_limits[-1],facecolor='blue',alpha=0.25)
-        plt.plot(1+zevol[1:],DA_limits[0],'b--')
-        plt.plot(1+zevol[1:],DA_limits[1],'b-')
-        plt.plot(1+zevol[1:],DA_limits[2],'b--')
-        if show_examples:
-            plt.plot(1+zevol[1:],(DA_realizations[iperm]/DA0).T,'r',alpha=0.5)
-        plt.xlabel(r'$1+z$')
-        plt.ylabel(r'$DA(z)/DA_0(z)$')
+            plt.subplot(num_plot_rows,2,2*irow+1)
+            plt.xscale('log')
+            plt.grid(True)
+            plt.xlim([1.,1000.])
+            plt.ylim([0.5,1.7])
+            plt.fill_between(1+zevol,DH_ratio_limits[0],DH_ratio_limits[-1],
+                facecolor='blue',alpha=0.25)
+            plt.plot(1+zevol,DH_ratio_limits[0],'b--')
+            plt.plot(1+zevol,DH_ratio_limits[1],'b-')
+            plt.plot(1+zevol,DH_ratio_limits[2],'b--')
+            if show_examples:
+                plt.plot(1+zevol,(DH_realizations[iperm]/DH0).T,'r',alpha=0.5)
+            plt.xlabel(r'$1+z$')
+            plt.ylabel(r'$D_H(z)/D_H^0(z)$')
 
-        plt.subplot(2,2,3)
-        plt.xscale('linear')
-        plt.grid(True)
-        plt.xlim([0.,args.zmax])
-        plt.plot(zevol[:iend],accel_limits[2,:iend])
-        plt.fill_between(zevol[:iend],accel_limits[0,:iend],accel_limits[-1,:iend],
-            facecolor='blue',alpha=0.25)
-        plt.plot(zevol[:iend],accel_limits[0,:iend],'b--')
-        plt.plot(zevol[:iend],accel_limits[1,:iend],'b-')
-        plt.plot(zevol[:iend],accel_limits[2,:iend],'b--')
-        if show_examples:
-            plt.plot(zevol[:iend],accel_realizations[:,:iend].T,'r',alpha=0.5)
-        plt.xlabel(r'$z$')
-        plt.ylabel(r'$H(z)/(1+z)$ (Mpc)')
+            plt.subplot(num_plot_rows,2,2*irow+2)
+            plt.xscale('log')
+            plt.grid(True)
+            plt.xlim([1.,1000.])
+            plt.ylim([0.5,1.7])
+            plt.fill_between(1+zevol[1:],DA_ratio_limits[0],DA_ratio_limits[-1],
+                facecolor='blue',alpha=0.25)
+            plt.plot(1+zevol[1:],DA_ratio_limits[0],'b--')
+            plt.plot(1+zevol[1:],DA_ratio_limits[1],'b-')
+            plt.plot(1+zevol[1:],DA_ratio_limits[2],'b--')
+            if show_examples:
+                plt.plot(1+zevol[1:],(DA_realizations[iperm]/DA0).T,'r',alpha=0.5)
+            plt.xlabel(r'$1+z$')
+            plt.ylabel(r'$D_A(z)/D_A^0(z)$')
+
+            irow += 1
+
+        # Plot zooms of DH,DA up to zmax.
+        if args.zoom:
+
+            plt.subplot(num_plot_rows,2,2*irow+1)
+            plt.xscale('linear')
+            plt.grid(True)
+            plt.xlim([0.,args.zmax])
+            plt.fill_between(zevol[:iend],1e-3*DH_limits[0,:iend],1e-3*DH_limits[-1,:iend],
+                facecolor='blue',alpha=0.25)
+            plt.plot(zevol[:iend],1e-3*DH_limits[0,:iend],'b--')
+            plt.plot(zevol[:iend],1e-3*DH_limits[1,:iend],'b-')
+            plt.plot(zevol[:iend],1e-3*DH_limits[2,:iend],'b--')
+            if show_examples:
+                plt.plot(zevol[:iend],1e-3*DH_realizations[iperm,:,:iend].T,'r',alpha=0.5)
+            plt.xlabel(r'$z$')
+            plt.ylabel(r'$D_H(z)$ (Gpc)')
+
+            plt.subplot(num_plot_rows,2,2*irow+2)
+            plt.xscale('linear')
+            plt.grid(True)
+            plt.xlim([0.,args.zmax])
+            plt.fill_between(zevol[:iend],1e-3*DA_limits[0,:iend],1e-3*DA_limits[-1,:iend],
+                facecolor='blue',alpha=0.25)
+            plt.plot(zevol[:iend],1e-3*DA_limits[0,:iend],'b--')
+            plt.plot(zevol[:iend],1e-3*DA_limits[1,:iend],'b-')
+            plt.plot(zevol[:iend],1e-3*DA_limits[2,:iend],'b--')
+            if show_examples:
+                plt.plot(zevol[:iend],1e-3*DA_realizations[iperm,:,:iend].T,'r',alpha=0.5)
+            plt.xlabel(r'$z$')
+            plt.ylabel(r'$D_A(z)$ (Gpc)')
+
+            irow += 1
+
+        # Plot dark-energy diagnostics up to zmax.
+        if args.dark_energy:
+
+            # Calculate the corresponding limits and realizations acceleration H(z)/(1+z).
+            accel_limits = clight/DH_limits/(1+zevol)
+            if show_examples:
+                accel_realizations = clight/DH_realizations[iperm]/(1+zevol)
+
+            plt.subplot(num_plot_rows,2,2*irow+1)
+            plt.xscale('linear')
+            plt.grid(True)
+            plt.xlim([0.,args.zmax])
+            plt.fill_between(zevol[:iend],accel_limits[0,:iend],accel_limits[-1,:iend],
+                facecolor='blue',alpha=0.25)
+            plt.plot(zevol[:iend],accel_limits[0,:iend],'b--')
+            plt.plot(zevol[:iend],accel_limits[1,:iend],'b-')
+            plt.plot(zevol[:iend],accel_limits[2,:iend],'b--')
+            if show_examples:
+                plt.plot(zevol[:iend],accel_realizations[:,:iend].T,'r',alpha=0.5)
+            plt.xlabel(r'$z$')
+            plt.ylabel(r'$H(z)/(1+z)$ (Mpc)')
+
+            irow += 1
 
         plt.savefig(args.output + name + '.' + args.plot_format)
         if args.show:

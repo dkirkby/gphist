@@ -1,6 +1,7 @@
 TODO:
 
-- Option to write plots for all combinations of posteriors in plot.py in batch mode, together with a json file to configure web display of plots
+- Add curves for DH0,DA0.
+- Option to write json file to configure web display of plots
 - Add javascript and html to display plots
 - Implement conformal time as new evolution variable.
 - Implement an alternate GP kernel.
