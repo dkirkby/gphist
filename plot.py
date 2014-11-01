@@ -69,7 +69,9 @@ def main():
             bin_range = loaded['bin_range']
             if show_examples:
                 DH_realizations = loaded['DH_realizations']
-                DA_realizations = loaded['DA_realizations']
+                DA_realizations = np.empty_like(DH_realizations)
+                DA_realizations[:,:,1:] = loaded['DA_realizations']
+                DA_realizations[:,:,0] = 0.
             posterior_names = loaded['posterior_names']
         else:
             assert np.array_equal(DH0,loaded['DH0']),'Found inconsistent DH0'
@@ -99,9 +101,11 @@ def main():
         DA_ratio_limits = gphist.analysis.calculate_confidence_limits(
             DA_hist[iperm],[args.level],bin_range)
 
-        # Convert to limits on DH, DA.
+        # Convert to limits on DH, DA, with DA limits extended to z=0.
         DH_limits = DH_ratio_limits*DH0
-        DA_limits = DA_ratio_limits*DA0
+        DA_limits = np.empty_like(DH_limits)
+        DA_limits[:,1:] = DA_ratio_limits*DA0
+        DA_limits[:,0] = 0.
 
         # Find first z index beyond H(z)/(1+z) plot.
         iend = 1+np.argmax(zevol > args.zmax)
@@ -140,7 +144,7 @@ def main():
             plt.plot(1+zevol[1:],DA_ratio_limits[1],'b-')
             plt.plot(1+zevol[1:],DA_ratio_limits[2],'b--')
             if show_examples:
-                plt.plot(1+zevol[1:],(DA_realizations[iperm]/DA0).T,'r',alpha=0.5)
+                plt.plot(1+zevol[1:],(DA_realizations[iperm,:,1:]/DA0).T,'r',alpha=0.5)
             plt.xlabel(r'$1+z$')
             plt.ylabel(r'$D_A(z)/D_A^0(z)$')
 

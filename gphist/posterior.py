@@ -127,8 +127,38 @@ class DHPosterior(GaussianPdf1D):
 			ndarray: Array of -logL values calculated at each input value.
 		"""
 		DH_interpolator = scipy.interpolate.interp1d(self.evol.svalues,DH)
-		DA_interpolator = scipy.interpolate.interp1d(self.evol.svalues[1:],DA)
 		values = DH_interpolator(self.s)
+		return GaussianPdf1D.get_nll(self,values[:,np.newaxis])
+
+class DAPosterior(GaussianPdf1D):
+	"""Posterior constraint on DA(z).
+
+	Args:
+		name(str): Name to associate with this posterior.
+		evol: Evolution variable to use for interpolating in redshift.
+		z(float): Redshift of posterior constraint.
+		DA(float): Central value of DA(z).
+		DA_error(float): RMS error on DA(z).
+	"""
+	def __init__(self,name,evol,z,DA,DA_error):
+		self.name = name
+		self.s = evol.s_of_z(z)
+		self.evol = evol
+		GaussianPdf1D.__init__(self,DA,DA_error)
+
+	def get_nll(self,DH,DA):
+		"""Calculate -logL for the posterior applied to a set of expansion histories.
+
+		Args:
+			DH(ndarray): Array of shape (nsamples,nz) of DH(z) values to use.
+			DA(ndarray): Array of shape (nsamples,nz-1) of DA(z) values to use.
+
+		Returns:
+			ndarray: Array of -logL values calculated at each input value.
+		"""
+		DA_interpolator = scipy.interpolate.interp1d(self.evol.svalues[1:],DA)
+		values = DA_interpolator(self.s)
+		print np.mean(values)
 		return GaussianPdf1D.get_nll(self,values[:,np.newaxis])
 
 class CMBThetaStarPosterior(GaussianPdf1D):

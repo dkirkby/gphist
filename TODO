@@ -5,3 +5,4 @@ TODO:
 - Add javascript and html to display plots
 - Implement conformal time as new evolution variable.
 - Implement an alternate GP kernel.
+- Test that an expansion history different from DH0 can be recovered w/o bias.

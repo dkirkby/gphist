@@ -59,11 +59,12 @@ def main():
     DA = gphist.distance.convert_DC_to_DA(DH,DC,args.omega_k)
 
     iz = 8
-    print 'zref =',evol.zvalues[iz],model.DH0[iz]
+    print 'zref =',evol.zvalues[iz],model.DH0[iz],model.DC0[iz-1]
 
     # Initialize the posteriors to use.
     posteriors = [
-        gphist.posterior.DHPosterior('DH',evol,evol.zvalues[iz],model.DH0[iz],0.005*model.DH0[iz])
+        gphist.posterior.DHPosterior('DH',evol,evol.zvalues[iz],model.DH0[iz],0.005*model.DH0[iz]),
+        gphist.posterior.DAPosterior('DA',evol,evol.zvalues[iz],model.DC0[iz-1],0.005*model.DC0[iz-1]),
     ]
     """
     gphist.posterior.LocalH0Posterior('H0'),
