@@ -15,28 +15,45 @@ def main():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--input',type = str, default = None,
         help = 'name of input file(s) to read (wildcard patterns are supported)')
+    parser.add_argument('--posterior', type = str, action='append', metavar = 'NAME',
+        help = 'posteriors to plot (can be repeated, plot all if None)')
+    parser.add_argument('--full', action = 'store_true',
+        help = 'show plots of DH/DH0,DA/DA0 evolution over full redshift range')
+    parser.add_argument('--zoom', action = 'store_true',
+        help = 'show plots of DH,DA on linear scale up to redshift zmax')
+    parser.add_argument('--dark-energy', action = 'store_true',
+        help = 'show plots of H(z)/(1+z) and Omega_DE(z)/Omega_DE(0) up to redshift zmax')
     parser.add_argument('--level', type = float, default = 0.9,
         help = 'confidence level to plot')
     parser.add_argument('--no-examples', action = 'store_true',
         help = 'do not show examples of random realizations of DH(z) and DA(z)')
     parser.add_argument('--zmax', type = float, default = 3.0,
         help = 'maximum redshift to display on H(z)/(1+z) plot')
-    parser.add_argument('--output', type = str, default = None,
+    parser.add_argument('--output', type = str, default = '',
         help = 'base name for saving plots')
-    parser.add_argument('--plot-format', type = str, default = 'png',
+    parser.add_argument('--show', action = 'store_true',
+        help = 'show each plot')
+    parser.add_argument('--plot-format', type = str, default = 'png', metavar = 'FMT',
         help = 'format for saving plots (png,pdf,...)')
     args = parser.parse_args()
 
+    # Do we have any inputs to read?
     if args.input is None:
         print 'Missing required input arg.'
         return -1
-    show_examples = not args.no_examples
     input_files = glob.glob(args.input)
     if not input_files:
         input_files = glob.glob(args.input + '.npz')
     if not input_files:
         print 'No input files match the pattern %r' % args.input
         return -1
+
+    # Do we have anything to plot?
+    num_rows = args.full + args.zoom + args.dark_energy
+    if num_rows == 0:
+        print 'No plots selected.'
+        return 0
+    show_examples = not args.no_examples
 
     # Combine the histograms from each input file.
     for index,input_file in enumerate(input_files):
@@ -69,6 +86,9 @@ def main():
     for iperm,perm in enumerate(perms):
 
         name = '-'.join(posterior_names[perms[iperm]]) or 'Prior'
+        if args.posterior and name not in args.posterior:
+            continue
+
         print '%d : %s' % (iperm,name)
 
         # Calculate the confidence bands from the combined histograms.
@@ -101,7 +121,7 @@ def main():
         plt.plot(1+zevol,DH_limits[2],'b--')
         if show_examples:
             plt.plot(1+zevol,(DH_realizations[iperm]/DH0).T,'r',alpha=0.5)
-        plt.xlabel(r'$log(1+z)$')
+        plt.xlabel(r'$1+z$')
         plt.ylabel(r'$DH(z)/DH_0(z)$')
 
         plt.subplot(2,2,2)
@@ -115,7 +135,7 @@ def main():
         plt.plot(1+zevol[1:],DA_limits[2],'b--')
         if show_examples:
             plt.plot(1+zevol[1:],(DA_realizations[iperm]/DA0).T,'r',alpha=0.5)
-        plt.xlabel(r'$log(1+z)$')
+        plt.xlabel(r'$1+z$')
         plt.ylabel(r'$DA(z)/DA_0(z)$')
 
         plt.subplot(2,2,3)
@@ -134,6 +154,8 @@ def main():
         plt.ylabel(r'$H(z)/(1+z)$ (Mpc)')
 
         plt.savefig(args.output + name + '.' + args.plot_format)
+        if args.show:
+            plt.show()
 
 if __name__ == '__main__':
     main()
