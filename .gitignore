@@ -55,6 +55,7 @@ target/
 
 # Program outputs
 *.npz
+*.tgz
 *.png
 *.pdf
 profile.out
