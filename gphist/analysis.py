@@ -60,19 +60,13 @@ def histogram(data,num_bins,bin_range,weights=None,out=None):
 		out = np.empty((num_bins+2,),dtype=np.float64)
 	elif out.shape != (num_bins+2,):
 		raise ValueError('Arg out must have shape (%d,)' % numbins+2)
-	contents,edges = np.histogram(data,bins=num_bins,
-		range=(min_value,max_value),weights=weights)
-	# Contents will have integral type if there are no weights.
-	out[1:-1] = contents.astype(np.float64,copy=False)
-	# Calculate underflow and overflow.
-	under = data < min_value
-	over = data >= max_value
-	if weights is None:
-		out[0] = np.count_nonzero(under)
-		out[-1] = np.count_nonzero(over)
-	else:
-		out[0] = np.sum(weights[under])
-		out[-1] = np.sum(weights[over])
+	# Calculate the bin index of each entry.
+	bin_index = np.floor((data-min_value)/(max_value-min_value)*num_bins).astype(int)+1
+	# Combine index < 1 into the underflow bin [0] and index > nbins+1 into the
+	# overflow [nbins+1].
+	bin_index = np.maximum(np.minimum(bin_index,num_bins+1),0)
+	# Fill the histogram and ensure the bin counts are floats (even without weights).
+	out[:] = np.bincount(bin_index,weights=weights,minlength=num_bins+2).astype(np.float64,copy=False)
 	return out
 
 def get_permutations(n):
