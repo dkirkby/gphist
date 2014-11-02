@@ -36,7 +36,6 @@ class HubbleDistanceModel(object):
 		evol: evolution parameter to use, which must have a zvalues attribute
 			and implement a get_DC method.
 	"""
-
 	def __init__(self,evol):
 		# Tabulate values of DH(z) for the fiducial model.
 		zp1 = evol.zvalues+1
@@ -46,7 +45,7 @@ class HubbleDistanceModel(object):
 		self.DC0 = evol.get_DC(self.DH0[np.newaxis,:])[0]
 
 	def get_DH(self,samples):
-		"""Builds expansion histories for the samples provided.
+		"""Build expansion histories from Gaussian process samples.
 
 		Each sample gamma(z) generates a Hubble distance function
 		DH(z) = DH0(z)*exp(gamma(z)).

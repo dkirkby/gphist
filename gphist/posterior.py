@@ -158,7 +158,6 @@ class DAPosterior(GaussianPdf1D):
 		"""
 		DA_interpolator = scipy.interpolate.interp1d(self.evol.svalues[1:],DA)
 		values = DA_interpolator(self.s)
-		print np.mean(values)
 		return GaussianPdf1D.get_nll(self,values[:,np.newaxis])
 
 class CMBThetaStarPosterior(GaussianPdf1D):
@@ -241,11 +240,11 @@ class BAOPosterior(GaussianPdf2D):
 		rho(double): Correlation coefficient between apar and aperp.
 			Must be between -1 and +1.
 	"""
-	def __init__(self,name,evol,z,apar,sigma_apar,aperp,sigma_aperp,rho):
+	def __init__(self,name,evol,z,apar,sigma_apar,aperp,sigma_aperp,rho,rsdrag):
 		self.name = name
 		self.s = evol.s_of_z(z)
 		self.evol = evol
-		self.rs_zdrag = 147.36
+		self.rsdrag = rsdrag
 		GaussianPdf2D.__init__(self,apar,sigma_apar,aperp,sigma_aperp,rho)
 
 	def get_nll(self,DH,DA):
@@ -263,5 +262,5 @@ class BAOPosterior(GaussianPdf2D):
 		"""
 		DH_interpolator = scipy.interpolate.interp1d(self.evol.svalues,DH)
 		DA_interpolator = scipy.interpolate.interp1d(self.evol.svalues[1:],DA)
-		values = np.vstack([DH_interpolator(self.s),DA_interpolator(self.s)])/self.rs_zdrag
+		values = np.vstack([DH_interpolator(self.s),DA_interpolator(self.s)])/self.rsdrag
 		return GaussianPdf2D.get_nll(self,values.T)

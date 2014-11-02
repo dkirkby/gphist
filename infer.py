@@ -25,6 +25,8 @@ def main():
         help = 'curvature parameter')
     parser.add_argument('--zstar', type = float, default = 1090.48,
         help = 'nominal redshift of last scattering')
+    parser.add_argument('--rsdrag', type = float, default = 147.36,
+        help = 'nominal sound horizon rs(zdrag) at the drag epoch in Mpc')
     parser.add_argument('--num-bins', type = int, default = 2000,
         help = 'number of bins to use for histogramming DH/DH0 and DA/DA0')
     parser.add_argument('--min-ratio', type = float, default = 0.,
@@ -59,17 +61,22 @@ def main():
     DA = gphist.distance.convert_DC_to_DA(DH,DC,args.omega_k)
 
     iz = 8
-    print 'zref =',evol.zvalues[iz],model.DH0[iz],model.DC0[iz-1]
+    zref = evol.zvalues[iz]
+    print 'zref =',zref,model.DH0[iz],model.DC0[iz-1]
+    frac = 0.005
 
     # Initialize the posteriors to use.
     posteriors = [
-        gphist.posterior.DHPosterior('DH',evol,evol.zvalues[iz],model.DH0[iz],0.005*model.DH0[iz]),
-        gphist.posterior.DAPosterior('DA',evol,evol.zvalues[iz],model.DC0[iz-1],0.005*model.DC0[iz-1]),
+        gphist.posterior.DHPosterior('DH',evol,zref,model.DH0[iz],frac*model.DH0[iz]),
+        gphist.posterior.DAPosterior('DA',evol,zref,model.DC0[iz-1],frac*model.DC0[iz-1]),
+        gphist.posterior.BAOPosterior('BAO',evol,zref,
+            model.DH0[iz]/args.rsdrag,frac*model.DH0[iz]/args.rsdrag,
+            model.DC0[iz-1]/args.rsdrag,frac*model.DC0[iz-1]/args.rsdrag,-0.9,args.rsdrag)
     ]
     """
     gphist.posterior.LocalH0Posterior('H0'),
-    gphist.posterior.BAOPosterior('LRG',evol,0.57,20.74,0.69,14.95,0.21,-0.52),
-    gphist.posterior.BAOPosterior('Lya',evol,2.3,9.15,1.22,36.46,0.20,-0.38),
+    gphist.posterior.BAOPosterior('LRG',evol,0.57,20.74,0.69,14.95,0.21,-0.52,args.rsdrag),
+    gphist.posterior.BAOPosterior('Lya',evol,2.3,9.15,1.22,36.46,0.20,-0.38,args.rsdrag),
     #gphist.posterior.CMBPosterior('CMB',evol,0.1921764,0.1274139e2,
     #    2.2012293e-06,7.87634e-05,0.0030466538),
     gphist.posterior.CMBPosterior('CMB',evol,0.1835618,0.1204209e2,
