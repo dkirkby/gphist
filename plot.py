@@ -58,6 +58,7 @@ def main():
     show_examples = not args.no_examples
 
     # Combine the histograms from each input file.
+    random_states = { }
     for index,input_file in enumerate(input_files):
         loaded = np.load(input_file)
         if index == 0:
@@ -66,13 +67,26 @@ def main():
             DH0 = loaded['DH0']
             DA0 = loaded['DA0']
             zevol = loaded['zevol']
+            fixed_options = loaded['fixed_options']
+            variable_options = loaded['variable_options']
             bin_range = loaded['bin_range']
+            hyper_range = loaded['hyper_range']
             if show_examples:
                 DH_realizations = loaded['DH_realizations']
                 DA_realizations = np.empty_like(DH_realizations)
                 DA_realizations[:,:,1:] = loaded['DA_realizations']
                 DA_realizations[:,:,0] = 0.
             posterior_names = loaded['posterior_names']
+            # Initialize the posterior permutations.
+            npost = len(posterior_names)
+            perms = gphist.analysis.get_permutations(npost)
+            # Initialize the hyperparameter grid.
+            n_samples,n_h,n_sigma = fixed_options
+            h_min,h_max,sigma_min,sigma_max = hyper_range
+            hyper_grid = gphist.process.HyperParameterLogGrid(
+                n_h,h_min,h_max,n_sigma,sigma_min,sigma_max)
+            # Initialize array of marginalized posterior NLL values over hyperparameters.
+            hyper_nll = np.zeros((2**npost,n_h,n_sigma))
         else:
             assert np.array_equal(DH0,loaded['DH0']),'Found inconsistent DH0'
             assert np.array_equal(DA0,loaded['DA0']),'Found inconsistent DA0'
@@ -81,18 +95,38 @@ def main():
                 'Found inconsistent bin_range'
             assert np.array_equal(posterior_names,loaded['posterior_names']),\
                 'Found inconsistent posterior_names'
+            assert np.array_equal(fixed_options,loaded['fixed_options']),\
+                'Found inconsistent fixed options'
+            assert np.array_equal(hyper_range,loaded['hyper_range']),\
+                'Found inconsistent hyperparameter grids'
             DH_hist += loaded['DH_hist']
             DA_hist += loaded['DA_hist']
+            variable_options = loaded['variable_options']
+
+        seed,cycle,hyper_index = variable_options
+
+        # Check that each input was calculated using a different random state.
+        random_state = (seed,cycle)
+        if random_state in random_states:
+            print 'ERROR: random state %r is duplicated in %s' % (random_state,input_file)
+            return -1
+        random_states[random_state] = input_file
+
+        # Accumulate marginalized hyperparameter statistics.
+        if hyper_index is not None:
+            i_h,i_sigma = hyper_grid.decode_index(hyper_index)
+            # Calculate the posterior weight of this permutation marginalized over the prior
+            # as the sum of histogram weights.  All DH and DA histograms have the same sum
+            # of weights so we arbitrarily use the first DH histogram.
+            nll = -np.log(np.sum(loaded['DH_hist'][:,0,:],axis=1))
+            print 'nll.shape',nll.shape
 
     # Loop over posterior permutations.
-    npost = len(posterior_names)
-    perms = gphist.analysis.get_permutations(npost)
     for iperm,perm in enumerate(perms):
 
         name = '-'.join(posterior_names[perms[iperm]]) or 'Prior'
         if args.posterior and name not in args.posterior:
             continue
-
         print '%d : %s' % (iperm,name)
 
         # Calculate the confidence bands of DH/DH0 and DA/DA0.

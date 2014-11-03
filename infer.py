@@ -23,6 +23,20 @@ def main():
         help = 'vertical scale hyperparameter value to use')
     parser.add_argument('--hyper-sigma', type = float, default = 0.14,
         help = 'horizontal scale hyperparameter value to use')
+    parser.add_argument('--hyper-index', type = int, default = None,
+        help = 'index into hyperparameter marginalization grid to use (ignore if None)')
+    parser.add_argument('--hyper-num-h', type = int, default = 5,
+        help = 'number of h grid points in marginalization grid')
+    parser.add_argument('--hyper-h-min', type = float, default = 0.01,
+        help = 'minimum value of hyperparameter h for marginalization grid')
+    parser.add_argument('--hyper-h-max', type = float, default = 10.,
+        help = 'maximum value of hyperparameter h for marginalization grid')
+    parser.add_argument('--hyper-num-sigma', type = int, default = 5,
+        help = 'number of sigma grid points in marginalization grid')
+    parser.add_argument('--hyper-sigma-min', type = float, default = 0.01,
+        help = 'minimum value of hyperparameter sigma for marginalization grid')
+    parser.add_argument('--hyper-sigma-max', type = float, default = 10.,
+        help = 'maximum value of hyperparameter sigma for marginalization grid')
     parser.add_argument('--omega-k', type = float, default =0.,
         help = 'curvature parameter')
     parser.add_argument('--zstar', type = float, default = 1090.48,
@@ -43,8 +57,18 @@ def main():
         help = 'use special priors to debug DH,DA,BAO constraints')
     args = parser.parse_args()
 
+    # Take hyperparameters from a grid if requested.
+    if args.hyper_index is not None:
+        hyper_grid = gphist.process.HyperParameterLogGrid(
+            args.hyper_num_h,args.hyper_h_min,args.hyper_h_max,
+            args.hyper_num_sigma,args.hyper_sigma_min,args.hyper_sigma_max)
+        h,sigma = hyper_grid.get_values(args.hyper_index)
+    else:
+        h,sigma = args.hyper_h,args.hyper_sigma
+    print 'Using hyperparamters (h,sigma) = (%f,%f)' % (h,sigma)
+
     # Initialize the Gaussian process prior.
-    prior = gphist.process.SquaredExponentialGaussianProcess(args.hyper_h,args.hyper_sigma)
+    prior = gphist.process.SquaredExponentialGaussianProcess(h,sigma)
 
     # Initialize the evolution variable.
     evol = gphist.evolution.LogScale(args.num_steps,args.zstar)
@@ -114,10 +138,17 @@ def main():
 
         # Save outputs.
         if args.output:
+            fixed_options = np.array([args.num_samples,args.hyper_num_h,args.hyper_num_sigma])
+            variable_options = np.array([args.seed,cycle,args.hyper_index])
             bin_range = np.array([args.min_ratio,args.max_ratio])
+            hyper_range = np.array([args.hyper_h_min,args.hyper_h_max,
+                args.hyper_sigma_min,args.hyper_sigma_max])
             output_name = '%s.%d.npz' % (args.output,cycle)
-            np.savez(output_name,DH_hist=DH_hist,DA_hist=DA_hist,
-                DH0=model.DH0,DA0=model.DC0,zevol=evol.zvalues,bin_range=bin_range,
+            np.savez(output_name,
+                DH_hist=DH_hist,DA_hist=DA_hist,
+                DH0=model.DH0,DA0=model.DC0,zevol=evol.zvalues,
+                fixed_options=fixed_options,variable_options=variable_options,
+                bin_range=bin_range,hyper_range=hyper_range,
                 DH_realizations=DH_realizations,DA_realizations=DA_realizations,
                 posterior_names=posterior_names)
             print 'wrote',output_name
