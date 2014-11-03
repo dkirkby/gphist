@@ -125,8 +125,11 @@ def main():
         posteriors_nll = gphist.analysis.calculate_posteriors_nll(DH,DA,posteriors)
 
         # Select some random realizations for each combination of posteriors.
-        DH_realizations,DA_realizations = gphist.analysis.select_random_realizations(
-            DH,DA,posteriors_nll,args.num_save)
+        # For now, we just sample the first cycle but it might be better to sample
+        # all cycles and then downsample.
+        if cycle == 0:
+            DH_realizations,DA_realizations = gphist.analysis.select_random_realizations(
+                DH,DA,posteriors_nll,args.num_save)
 
         # Build histograms of DH/DH0 and DA/DA0 for each redshift slice and
         # all permutations of posteriors. Note that we use DC0 for DA0, i.e., assuming
@@ -136,22 +139,31 @@ def main():
         DH_hist,DA_hist = gphist.analysis.calculate_distance_histograms(
             DH,model.DH0,DA,model.DC0,posteriors_nll,args.num_bins,args.min_ratio,args.max_ratio)
 
-        # Save outputs.
-        if args.output:
-            fixed_options = np.array([args.num_samples,args.hyper_num_h,args.hyper_num_sigma])
-            variable_options = np.array([args.seed,cycle,args.hyper_index])
-            bin_range = np.array([args.min_ratio,args.max_ratio])
-            hyper_range = np.array([args.hyper_h_min,args.hyper_h_max,
-                args.hyper_sigma_min,args.hyper_sigma_max])
-            output_name = '%s.%d.npz' % (args.output,cycle)
-            np.savez(output_name,
-                DH_hist=DH_hist,DA_hist=DA_hist,
-                DH0=model.DH0,DA0=model.DC0,zevol=evol.zvalues,
-                fixed_options=fixed_options,variable_options=variable_options,
-                bin_range=bin_range,hyper_range=hyper_range,
-                DH_realizations=DH_realizations,DA_realizations=DA_realizations,
-                posterior_names=posterior_names)
-            print 'wrote',output_name
+        # Combine with the results of any previous cycles.
+        if cycle == 0:
+            combined_DH_hist = DH_hist
+            combined_DA_hist = DA_hist
+        else:
+            combined_DH_hist += DH_hist
+            combined_DA_hist += DA_hist            
+
+        print 'Finished cycle %d of %d' % (cycle+1,args.num_cycles)
+
+    # Save outputs.
+    if args.output:
+        fixed_options = np.array([args.num_samples,args.num_cycles,
+            args.hyper_num_h,args.hyper_num_sigma])
+        variable_options = np.array([args.seed,args.hyper_index])
+        bin_range = np.array([args.min_ratio,args.max_ratio])
+        hyper_range = np.array([args.hyper_h_min,args.hyper_h_max,
+            args.hyper_sigma_min,args.hyper_sigma_max])
+        np.savez('%s.npz' % args.output,
+            DH_hist=combined_DH_hist,DA_hist=combined_DA_hist,
+            DH0=model.DH0,DA0=model.DC0,zevol=evol.zvalues,
+            fixed_options=fixed_options,variable_options=variable_options,
+            bin_range=bin_range,hyper_range=hyper_range,
+            DH_realizations=DH_realizations,DA_realizations=DA_realizations,
+            posterior_names=posterior_names)
 
 if __name__ == '__main__':
     main()

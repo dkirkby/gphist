@@ -81,7 +81,7 @@ def main():
             npost = len(posterior_names)
             perms = gphist.analysis.get_permutations(npost)
             # Initialize the hyperparameter grid.
-            n_samples,n_h,n_sigma = fixed_options
+            n_samples,n_cycles,n_h,n_sigma = fixed_options
             h_min,h_max,sigma_min,sigma_max = hyper_range
             hyper_grid = gphist.process.HyperParameterLogGrid(
                 n_h,h_min,h_max,n_sigma,sigma_min,sigma_max)
@@ -103,10 +103,10 @@ def main():
             DA_hist += loaded['DA_hist']
             variable_options = loaded['variable_options']
 
-        seed,cycle,hyper_index = variable_options
+        seed,hyper_index = variable_options
 
         # Check that each input was calculated using a different random state.
-        random_state = (seed,cycle)
+        random_state = seed
         if random_state in random_states:
             print 'ERROR: random state %r is duplicated in %s' % (random_state,input_file)
             return -1
@@ -118,8 +118,8 @@ def main():
             # Calculate the posterior weight of this permutation marginalized over the prior
             # as the sum of histogram weights.  All DH and DA histograms have the same sum
             # of weights so we arbitrarily use the first DH histogram.
-            nll = -np.log(np.sum(loaded['DH_hist'][:,0,:],axis=1))
-            print 'nll.shape',nll.shape
+            marginal_weights = np.sum(loaded['DH_hist'][:,0,:],axis=1)
+            hyper_nll[:,i_h,i_sigma] = -np.log(marginal_weights)
 
     # Loop over posterior permutations.
     for iperm,perm in enumerate(perms):
@@ -128,6 +128,8 @@ def main():
         if args.posterior and name not in args.posterior:
             continue
         print '%d : %s' % (iperm,name)
+
+        print hyper_nll[iperm]
 
         # Calculate the confidence bands of DH/DH0 and DA/DA0.
         DH_ratio_limits = gphist.analysis.calculate_confidence_limits(
