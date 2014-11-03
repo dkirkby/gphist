@@ -11,12 +11,14 @@ import gphist
 def main():
     # Parse command-line arguments.
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('--num-samples', type = int, default = 1000000,
-        help = 'number of samples to generate')
     parser.add_argument('--seed', type = int, default = 26102014,
         help = 'random seed to use for sampling the prior')
+    parser.add_argument('--num-samples', type = int, default = 1000000,
+        help = 'number of samples to generate')
     parser.add_argument('--num-steps', type = int, default = 50,
         help = 'number of steps in evolution variable to use')
+    parser.add_argument('--num-cycles', type = int, default = 1,
+        help = 'number of generation cycles to perform')
     parser.add_argument('--hyper-h', type = float, default = 0.3,
         help = 'vertical scale hyperparameter value to use')
     parser.add_argument('--hyper-sigma', type = float, default = 0.14,
@@ -50,18 +52,6 @@ def main():
     # Initialize the distance model.
     model = gphist.distance.HubbleDistanceModel(evol)
 
-    # Generate samples from the prior.
-    samples = prior.generate_samples(args.num_samples,evol.svalues,args.seed)
-
-    # Convert each sample into a corresponding tabulated DH(z).
-    DH = model.get_DH(samples)
-
-    # Calculate the corresponding comoving distance functions DC(z).
-    DC = evol.get_DC(DH)
-
-    # Calculate the corresponding comoving angular scale functions DA(z).
-    DA = gphist.distance.convert_DC_to_DA(DH,DC,args.omega_k)
-
     # Initialize the posteriors to use.
     if args.debug:
         # Compare independent DH,DA constraints at z ~ 2.1 with a simultaneous BAO constraint.
@@ -89,28 +79,48 @@ def main():
         ]
     posterior_names = np.array([p.name for p in posteriors])
 
-    # Calculate -logL for each combination of posterior and prior sample.
-    posteriors_nll = gphist.analysis.calculate_posteriors_nll(DH,DA,posteriors)
+    for cycle in range(args.num_cycles):
 
-    # Select some random realizations for each combination of posteriors.
-    DH_realizations,DA_realizations = gphist.analysis.select_random_realizations(
-        DH,DA,posteriors_nll,args.num_save)
+        # Initialize the random state for this (seed,cycle) combination in a
+        # portable and reproducible way.
+        random_state = np.random.RandomState([args.seed,cycle])
 
-    # Build histograms of DH/DH0 and DA/DA0 for each redshift slice and
-    # all permutations of posteriors. Note that we use DC0 for DA0, i.e., assuming
-    # zero curvature for the baseline. A side effect of this call is that the
-    # DH,DA arrays will be overwritten with the ratios DH/DH0, DA/DA0 (to avoid
-    # allocating additional large arrays).
-    DH_hist,DA_hist = gphist.analysis.calculate_distance_histograms(
-        DH,model.DH0,DA,model.DC0,posteriors_nll,args.num_bins,args.min_ratio,args.max_ratio)
+        # Generate samples from the prior using sequential seeds.
+        samples = prior.generate_samples(args.num_samples,evol.svalues,random_state)
 
-    # Save outputs.
-    if args.output:
-        bin_range = np.array([args.min_ratio,args.max_ratio])
-        np.savez(args.output+'.npz',DH_hist=DH_hist,DA_hist=DA_hist,
-            DH0=model.DH0,DA0=model.DC0,zevol=evol.zvalues,bin_range=bin_range,
-            DH_realizations=DH_realizations,DA_realizations=DA_realizations,
-            posterior_names=posterior_names)
+        # Convert each sample into a corresponding tabulated DH(z).
+        DH = model.get_DH(samples)
+
+        # Calculate the corresponding comoving distance functions DC(z).
+        DC = evol.get_DC(DH)
+
+        # Calculate the corresponding comoving angular scale functions DA(z).
+        DA = gphist.distance.convert_DC_to_DA(DH,DC,args.omega_k)
+
+        # Calculate -logL for each combination of posterior and prior sample.
+        posteriors_nll = gphist.analysis.calculate_posteriors_nll(DH,DA,posteriors)
+
+        # Select some random realizations for each combination of posteriors.
+        DH_realizations,DA_realizations = gphist.analysis.select_random_realizations(
+            DH,DA,posteriors_nll,args.num_save)
+
+        # Build histograms of DH/DH0 and DA/DA0 for each redshift slice and
+        # all permutations of posteriors. Note that we use DC0 for DA0, i.e., assuming
+        # zero curvature for the baseline. A side effect of this call is that the
+        # DH,DA arrays will be overwritten with the ratios DH/DH0, DA/DA0 (to avoid
+        # allocating additional large arrays).
+        DH_hist,DA_hist = gphist.analysis.calculate_distance_histograms(
+            DH,model.DH0,DA,model.DC0,posteriors_nll,args.num_bins,args.min_ratio,args.max_ratio)
+
+        # Save outputs.
+        if args.output:
+            bin_range = np.array([args.min_ratio,args.max_ratio])
+            output_name = '%s.%d.npz' % (args.output,cycle)
+            np.savez(output_name,DH_hist=DH_hist,DA_hist=DA_hist,
+                DH0=model.DH0,DA0=model.DC0,zevol=evol.zvalues,bin_range=bin_range,
+                DH_realizations=DH_realizations,DA_realizations=DA_realizations,
+                posterior_names=posterior_names)
+            print 'wrote',output_name
 
 if __name__ == '__main__':
     main()

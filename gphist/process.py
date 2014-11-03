@@ -20,21 +20,20 @@ class SquaredExponentialGaussianProcess(object):
 		self.hyper_h = hyper_h
 		self.hyper_sigma = hyper_sigma
 
-	def generate_samples(self,num_samples,svalues,seed=None):
+	def generate_samples(self,num_samples,svalues,random_state=None):
 		"""Generates random samples of our Gaussian process.
 
 		Args:
 			num_samples(int): Number of samples to generate.
 			svalues(ndarray): Values of the evolution variable where the process
 				will be sampled.
-			seed(int): Random seed to use, or use default state if seed is None.
+			random_state(numpy.RandomState): Random state to use, or use default
+				state if None.
 
 		Returns:
 			ndarray: Array with shape (num_samples,len(svalues)) containing the
 				generated samples.
 		"""
-		if seed is not None:
-			numpy.random.seed(seed)
 		# Evaluate the kernel for all pairs (s1,s2). This could be optimized to
 		# evaluate only the s1 >= s2 pairs if necessary.
 		s1,s2 = np.meshgrid(svalues,svalues,indexing='ij')
@@ -42,4 +41,6 @@ class SquaredExponentialGaussianProcess(object):
 		covariance = self.hyper_h**2*np.exp(-ds**2/(2*self.hyper_sigma**2))
 		# Sample this covariance with zero mean.
 		mean = np.zeros_like(svalues)
-		return np.random.multivariate_normal(mean,covariance,num_samples)
+		# Fall back to the default random generator if necessary.
+		generator = random_state if random_state else np.random
+		return generator.multivariate_normal(mean,covariance,num_samples)
