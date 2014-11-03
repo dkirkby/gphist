@@ -4,6 +4,45 @@
 import numpy as np
 import numpy.random
 
+class HyperParameterLogGrid(object):
+	"""Defines a log-spaced grid of hyperparameter values.
+
+	Args:
+		n_h(int): Number of grid points covering hyperparameter h.
+		h_min(float): Minimum grid value of hyperparameter h.
+		h_max(float): Maximum grid value of hyperparameter h.
+		n_sigma(int): Number of grid points covering hyperparameter sigma.
+		sigma_min(float): Minimum grid value of hyperparameter sigma.
+		sigma_max(float): Maximum grid value of hyperparameter sigma.
+	"""
+	def __init__(self,n_h,h_min,h_max,n_sigma,sigma_min,sigma_max):
+		self.h = h_min*np.power(h_max/h_min,np.arange(n_h)/(n_h-1.))
+		self.sigma = sigma_min*np.power(sigma_max/sigma_min,np.arange(n_sigma)/(n_sigma-1.))
+		self.n_h = n_h
+
+	def decode_index(self,index):
+		"""Decode a flattened grid index.
+
+		Args:
+			index(int): Flattened index in the range [0:n_h*n_sigma].
+
+		Returns:
+			tuple: h,sigma index values.
+		"""
+		return index//self.n_h,index%self.n_h
+
+	def get_values(self,index):
+		"""Lookup hyperparameter values on the grid.
+
+		Args:
+			index(int): Flattened index in the range [0:n_h*n_sigma].
+
+		Returns:
+			tuple: Values of h,sigma at the specified grid point.
+		"""
+		i_h,i_sigma = self.decode_index(index)
+		return self.h[i_h],self.sigma[i_sigma]
+
 class SquaredExponentialGaussianProcess(object):
 	"""Generates Gaussian process realizations using a squared-exponential kernel.
 
