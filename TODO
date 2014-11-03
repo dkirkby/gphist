@@ -6,3 +6,6 @@ TODO:
 - Implement conformal time as new evolution variable.
 - Implement an alternate GP kernel.
 - Test that an expansion history different from DH0 can be recovered w/o bias.
+- Check memory usage and avoid copies of large DH,DA arrays.
+- Implement option to generate multiple cycles of num-samples.
+- Implement marginalization over hyper parameters with log priors.

@@ -75,10 +75,12 @@ def get_permutations(n):
 		mask[iperm] = np.bitwise_and(iperm,bits) > 0
 	return mask
 
-def calculate_distance_histograms(DH,DH0,DA,DA0,nll,num_bins,bin_range):
+def calculate_distance_histograms(DH,DH0,DA,DA0,nll,num_bins,min_value,max_value):
 	"""Build histograms of DH/DH0 and DA/DA0.
 
-	Calculate histograms for all permutations of posterior weightings.
+	Calculate histograms for all permutations of posterior weightings. A side effect
+	of calling this function is that values in the DH,DA arrays will be replaced with
+	scaled values of DH/DH0,DA/DA0 in order to avoid allocating additional large arrays.
 
 	Args:
 		DH(ndarray): Array of shape (nsamples,nz) of DH(z) values to use.
@@ -88,9 +90,9 @@ def calculate_distance_histograms(DH,DH0,DA,DA0,nll,num_bins,bin_range):
 		nll(ndarray): Array of shape (npost,nsamples) containing the nll
 			posterior weights to use.
 		num_bins(int): Number of equally spaced bins to use for each histogram.
-		bin_range(ndarray): Array of length 2 with binning min,max values to use.
-			Values below or above these limits are accumulated in an underflow
-			or overflow bin.
+		min_value(float): Values less than this are accumulated in an underflow bin.
+		max_value(float): Values greater than equal to this are accumulated in an
+			overflow bin.
 
 	Returns:
 		tuple: Arrays of histograms for DH/DH0 and DA/DA0 with shapes
@@ -100,17 +102,22 @@ def calculate_distance_histograms(DH,DH0,DA,DA0,nll,num_bins,bin_range):
 			For example, iperm = 5 = 2^0 + 2^2 combines posteriors 0 and 2.
 
 	Raises:
-		ValueError: bin_range does not have exactly two values.
 		AssertionError: Unexpected sizes of DH,DH0,DA,DA0.
 	"""
 	nsamples,nz = DH.shape
 	npost = len(nll)
-	min_value,max_value = bin_range
 	# Check sizes.
 	assert DH0.shape == (nz,)
 	assert DA0.shape == (nz-1,)
 	assert DA.shape == (nsamples,nz-1)
 	assert nll.shape == (npost,nsamples)
+	# Rescale DH,DA in place to avoid allocating additional large arrays.
+	DH /= DH0
+	DA /= DA0
+	# Create transposed views so that the bin index arrays created below have
+	# sample number increasing fastest.
+	DH_ratio = DH.T
+	DA_ratio = DA.T
 	# Initialize posterior permutations.
 	nperm = 2**npost
 	perms = get_permutations(npost)
@@ -118,8 +125,8 @@ def calculate_distance_histograms(DH,DH0,DA,DA0,nll,num_bins,bin_range):
 	DH_hist = np.empty((nperm,nz,num_bins+2))
 	DA_hist = np.empty((nperm,nz-1,num_bins+2))
 	# Calculate bin indices for DH/DH0. We process DH/DH0 and DA/DA0 separately
-	# to avoid allocating two large bin_indices arrays at the same time.
-	bin_indices = get_bin_indices(DH/DH0,num_bins,min_value,max_value).transpose()
+	# to avoid allocating two large index arrays at the same time.
+	bin_indices = get_bin_indices(DH_ratio,num_bins,min_value,max_value)
 	# Loop over permutations.
 	for iperm,perm in enumerate(perms):
 		# Calculate weights for this permutation.
@@ -130,7 +137,7 @@ def calculate_distance_histograms(DH,DH0,DA,DA0,nll,num_bins,bin_range):
 			DH_hist[iperm,iz] = np.bincount(
 				bin_indices[iz],weights=perm_weights,minlength=num_bins+2)
 	# Calculate bin indices for DA/DA0, replacing the large array allocated above.
-	bin_indices = get_bin_indices(DA/DA0,num_bins,min_value,max_value).transpose()
+	bin_indices = get_bin_indices(DA_ratio,num_bins,min_value,max_value)
 	# Loop over permutations.
 	for iperm,perm in enumerate(perms):
 		# Calculate weights for this permutation.

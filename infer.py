@@ -62,15 +62,14 @@ def main():
     # Calculate the corresponding comoving angular scale functions DA(z).
     DA = gphist.distance.convert_DC_to_DA(DH,DC,args.omega_k)
 
-
     # Initialize the posteriors to use.
     if args.debug:
         # Compare independent DH,DA constraints at z ~ 2.1 with a simultaneous BAO constraint.
         iz = 8
         zref = evol.zvalues[iz]
-        print 'zref =',zref,model.DH0[iz],model.DC0[iz-1]
-        frac = 0.01
-        rho = 0.9
+        print 'Debug: z,DH(z),DC(z) =',zref,model.DH0[iz],model.DC0[iz-1]
+        frac = 0.01 # fractional error of constraints
+        rho = 0.9 # DH-DC correlation for 2D constraint
         posteriors = [
             gphist.posterior.DHPosterior('DH',evol,zref,model.DH0[iz],frac*model.DH0[iz]),
             gphist.posterior.DAPosterior('DA',evol,zref,model.DC0[iz-1],frac*model.DC0[iz-1]),
@@ -93,18 +92,21 @@ def main():
     # Calculate -logL for each combination of posterior and prior sample.
     posteriors_nll = gphist.analysis.calculate_posteriors_nll(DH,DA,posteriors)
 
-    # Build histograms of DH/DH0 and DA/DC0 for each redshift slice and
-    # all permutations of posteriors.
-    bin_range = np.array([args.min_ratio,args.max_ratio])
-    DH_hist,DA_hist = gphist.analysis.calculate_distance_histograms(
-        DH,model.DH0,DA,model.DC0,posteriors_nll,args.num_bins,bin_range)
-
     # Select some random realizations for each combination of posteriors.
     DH_realizations,DA_realizations = gphist.analysis.select_random_realizations(
         DH,DA,posteriors_nll,args.num_save)
 
+    # Build histograms of DH/DH0 and DA/DA0 for each redshift slice and
+    # all permutations of posteriors. Note that we use DC0 for DA0, i.e., assuming
+    # zero curvature for the baseline. A side effect of this call is that the
+    # DH,DA arrays will be overwritten with the ratios DH/DH0, DA/DA0 (to avoid
+    # allocating additional large arrays).
+    DH_hist,DA_hist = gphist.analysis.calculate_distance_histograms(
+        DH,model.DH0,DA,model.DC0,posteriors_nll,args.num_bins,args.min_ratio,args.max_ratio)
+
     # Save outputs.
     if args.output:
+        bin_range = np.array([args.min_ratio,args.max_ratio])
         np.savez(args.output+'.npz',DH_hist=DH_hist,DA_hist=DA_hist,
             DH0=model.DH0,DA0=model.DC0,zevol=evol.zvalues,bin_range=bin_range,
             DH_realizations=DH_realizations,DA_realizations=DA_realizations,
