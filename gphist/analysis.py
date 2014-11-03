@@ -25,49 +25,38 @@ def calculate_posteriors_nll(DH,DA,posteriors):
 		nll[ipost] = post.get_nll(DH,DA)
 	return nll
 
-def histogram(data,num_bins,bin_range,weights=None,out=None):
-	"""Build a histogram with underflow and overflow bins.
+def get_bin_indices(data,num_bins,min_value,max_value):
+	"""Create array of integer bin indices in preparation for histogramming.
 
-	Uses the numpy.histogram function but also accumulates underflow and
-	overflow values. Use the :py:func:`quantiles` function to extract quantile
-	levels from the resulting histograms. Use fixed histogram binning to
-	simplify combining histograms from different runs.
+	Results are in a format suitable for using with numpy.bincount. This function
+	only handles uniform binning, but is generally faster than numpy.histogram in
+	this case, especially when this method is broadcast over data that is destined
+	for multiple histograms.
 
 	Args:
 		data(ndarray): Array of data to histogram.
 		num_bins(int): Number of equally spaced bins to use for each histogram.
-		bin_range(ndarray): Array of length 2 with binning min,max values to use.
-			Values below or above these limits are accumulated in an underflow
-			or overflow bin.
-		weights(ndarray): Optional array of weights to use. If provided, its
-			length must match the length of data.
-		out(ndarray): Optional array where results should be saved. If this is not
-			provided, new array memory is allocated.
+		min_value(float): Values less than this are accumulated in an underflow bin.
+		max_value(float): Values greater than equal to this are accumulated in an
+			overflow bin.
 
 	Returns:
-		ndarray: Array of length num_bins+2 containing per-bin sums of
-			weights in each bin. The first and last bin contents
-			record underflow and overflow sums of weights, respectively.
-			A newly allocated array always has dtype of numpy.float64, independently
-			of whether weights are provided. Returns the input parameter out
-			when this is not None.
+		ndarray: Array of integer bin indices with the same shape as data. Each
+			input data value is replaced with its corresponding bin index in the
+			range [1:num_bins+1] or 0 if value < min_value or num_bins+1 if
+			value >= max_value.
 
 	Raises:
-		ValueError: the bin_range or out arguments do not have the expected shape.
+		ValueError: num_bins <= 0 or min_value >= max_value.
 	"""
-	min_value,max_value = bin_range
-	if out is None:
-		out = np.empty((num_bins+2,),dtype=np.float64)
-	elif out.shape != (num_bins+2,):
-		raise ValueError('Arg out must have shape (%d,)' % numbins+2)
-	# Calculate the bin index of each entry.
-	bin_index = np.floor((data-min_value)/(max_value-min_value)*num_bins).astype(int)+1
+	if num_bins <= 0:
+		raise ValueError('num_bins <= 0')
+	if min_value >= max_value:
+		raise ValueError('min_value >= max_value')
+	bin_indices = np.floor((data-min_value)/(max_value-min_value)*num_bins).astype(int)+1
 	# Combine index < 1 into the underflow bin [0] and index > nbins+1 into the
 	# overflow [nbins+1].
-	bin_index = np.maximum(np.minimum(bin_index,num_bins+1),0)
-	# Fill the histogram and ensure the bin counts are floats (even without weights).
-	out[:] = np.bincount(bin_index,weights=weights,minlength=num_bins+2).astype(np.float64,copy=False)
-	return out
+	return np.maximum(np.minimum(bin_indices,num_bins+1),0)
 
 def get_permutations(n):
 	"""Builds an array of permutations.
@@ -111,33 +100,46 @@ def calculate_distance_histograms(DH,DH0,DA,DA0,nll,num_bins,bin_range):
 			For example, iperm = 5 = 2^0 + 2^2 combines posteriors 0 and 2.
 
 	Raises:
+		ValueError: bin_range does not have exactly two values.
 		AssertionError: Unexpected sizes of DH,DH0,DA,DA0.
 	"""
 	nsamples,nz = DH.shape
 	npost = len(nll)
+	min_value,max_value = bin_range
 	# Check sizes.
 	assert DH0.shape == (nz,)
 	assert DA0.shape == (nz-1,)
 	assert DA.shape == (nsamples,nz-1)
 	assert nll.shape == (npost,nsamples)
-	# Allocate output arrays.
+	# Initialize posterior permutations.
 	nperm = 2**npost
+	perms = get_permutations(npost)
+	# Allocate output arrays.
 	DH_hist = np.empty((nperm,nz,num_bins+2))
 	DA_hist = np.empty((nperm,nz-1,num_bins+2))
+	# Calculate bin indices for DH/DH0. We process DH/DH0 and DA/DA0 separately
+	# to avoid allocating two large bin_indices arrays at the same time.
+	bin_indices = get_bin_indices(DH/DH0,num_bins,min_value,max_value).transpose()
 	# Loop over permutations.
-	perms = get_permutations(npost)
 	for iperm,perm in enumerate(perms):
 		# Calculate weights for this permutation.
-		perm_nll = np.sum(nll[perm],axis=0)  # Returns zero when perm entries are all False.
+		perm_nll = np.sum(nll[perm],axis=0)  # Returns zero when perm entries all False.
 		perm_weights = np.exp(-perm_nll)
-		# Build nz histograms of DH/DH0.
+		# Build histograms of DH/DH0 for each redshift slice.
 		for iz in range(nz):
-			histogram(DH[:,iz]/DH0[iz],num_bins,bin_range,
-				out=DH_hist[iperm,iz],weights=perm_weights)
-		# Build nz-1 histograms of DA/DA0.
+			DH_hist[iperm,iz] = np.bincount(
+				bin_indices[iz],weights=perm_weights,minlength=num_bins+2)
+	# Calculate bin indices for DA/DA0, replacing the large array allocated above.
+	bin_indices = get_bin_indices(DA/DA0,num_bins,min_value,max_value).transpose()
+	# Loop over permutations.
+	for iperm,perm in enumerate(perms):
+		# Calculate weights for this permutation.
+		perm_nll = np.sum(nll[perm],axis=0)  # Returns zero when perm entries all False.
+		perm_weights = np.exp(-perm_nll)
+		# Build histograms of DA/DA0 for each redshift slice.
 		for iz in range(nz-1):
-			histogram(DA[:,iz]/DA0[iz],num_bins,bin_range,
-				out=DA_hist[iperm,iz],weights=perm_weights)
+			DA_hist[iperm,iz] = np.bincount(
+				bin_indices[iz],weights=perm_weights,minlength=num_bins+2)
 	return DH_hist,DA_hist
 
 def quantiles(histogram,quantile_levels,bin_range,threshold=1e-8):

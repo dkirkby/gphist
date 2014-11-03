@@ -37,6 +37,8 @@ def main():
         help = 'number of prior realizations to save for each combination of posteriors')
     parser.add_argument('--output', type = str, default = None,
         help = 'name of output file to write (the extension .npz will be added)')
+    parser.add_argument('--debug', action = 'store_true',
+        help = 'use special priors to debug DH,DA,BAO constraints')
     args = parser.parse_args()
 
     # Initialize the Gaussian process prior.
@@ -60,28 +62,32 @@ def main():
     # Calculate the corresponding comoving angular scale functions DA(z).
     DA = gphist.distance.convert_DC_to_DA(DH,DC,args.omega_k)
 
-    iz = 8
-    zref = evol.zvalues[iz]
-    print 'zref =',zref,model.DH0[iz],model.DC0[iz-1]
-    frac = 0.005
 
     # Initialize the posteriors to use.
-    posteriors = [
-        gphist.posterior.DHPosterior('DH',evol,zref,model.DH0[iz],frac*model.DH0[iz]),
-        gphist.posterior.DAPosterior('DA',evol,zref,model.DC0[iz-1],frac*model.DC0[iz-1]),
-        gphist.posterior.BAOPosterior('BAO',evol,zref,
-            model.DH0[iz]/args.rsdrag,frac*model.DH0[iz]/args.rsdrag,
-            model.DC0[iz-1]/args.rsdrag,frac*model.DC0[iz-1]/args.rsdrag,-0.9,args.rsdrag)
-    ]
-    """
-    gphist.posterior.LocalH0Posterior('H0'),
-    gphist.posterior.BAOPosterior('LRG',evol,0.57,20.74,0.69,14.95,0.21,-0.52,args.rsdrag),
-    gphist.posterior.BAOPosterior('Lya',evol,2.3,9.15,1.22,36.46,0.20,-0.38,args.rsdrag),
-    #gphist.posterior.CMBPosterior('CMB',evol,0.1921764,0.1274139e2,
-    #    2.2012293e-06,7.87634e-05,0.0030466538),
-    gphist.posterior.CMBPosterior('CMB',evol,0.1835618,0.1204209e2,
-        6.0964331e-05,0.00465422,0.36262126),
-    """
+    if args.debug:
+        # Compare independent DH,DA constraints at z ~ 2.1 with a simultaneous BAO constraint.
+        iz = 8
+        zref = evol.zvalues[iz]
+        print 'zref =',zref,model.DH0[iz],model.DC0[iz-1]
+        frac = 0.01
+        rho = 0.9
+        posteriors = [
+            gphist.posterior.DHPosterior('DH',evol,zref,model.DH0[iz],frac*model.DH0[iz]),
+            gphist.posterior.DAPosterior('DA',evol,zref,model.DC0[iz-1],frac*model.DC0[iz-1]),
+            gphist.posterior.BAOPosterior('BAO',evol,zref,
+                model.DH0[iz]/args.rsdrag,frac*model.DH0[iz]/args.rsdrag,
+                model.DC0[iz-1]/args.rsdrag,frac*model.DC0[iz-1]/args.rsdrag,rho,args.rsdrag)
+        ]
+    else:
+        posteriors = [
+            gphist.posterior.LocalH0Posterior('H0'),
+            gphist.posterior.BAOPosterior('LRG',evol,0.57,20.74,0.69,14.95,0.21,-0.52,args.rsdrag),
+            gphist.posterior.BAOPosterior('Lya',evol,2.3,9.15,1.22,36.46,0.20,-0.38,args.rsdrag),
+            #gphist.posterior.CMBPosterior('CMB',evol,0.1921764,0.1274139e2,
+            #    2.2012293e-06,7.87634e-05,0.0030466538),
+            gphist.posterior.CMBPosterior('CMB',evol,0.1835618,0.1204209e2,
+                6.0964331e-05,0.00465422,0.36262126),
+        ]
     posterior_names = np.array([p.name for p in posteriors])
 
     # Calculate -logL for each combination of posterior and prior sample.
