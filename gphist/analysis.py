@@ -183,9 +183,9 @@ def quantiles(histogram,quantile_levels,bin_range,threshold=1e-8):
 	cdf /= cdf[-1]
 	# Check that the requested levels lie within the binning range.
 	if np.min(quantile_levels) < cdf[0]:
-		raise RuntimeError('Quantile level %f is below binning range' % np.min(levels))
+		raise RuntimeError('Quantile level %f is below binning range' % np.min(quantile_levels))
 	if np.max(quantile_levels) > cdf[-2]:
-		raise RuntimeError('Quantile level %f is above binning range' % np.max(levels))
+		raise RuntimeError('Quantile level %f is above binning range' % np.max(quantile_levels))
 	# Skip almost empty bins so that CDF values are increasing for inverse interpolation.
 	use = np.diff(cdf) > threshold
 	use[0] = True

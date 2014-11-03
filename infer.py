@@ -29,13 +29,13 @@ def main():
         help = 'number of h grid points in marginalization grid')
     parser.add_argument('--hyper-h-min', type = float, default = 0.01,
         help = 'minimum value of hyperparameter h for marginalization grid')
-    parser.add_argument('--hyper-h-max', type = float, default = 10.,
+    parser.add_argument('--hyper-h-max', type = float, default = 1.,
         help = 'maximum value of hyperparameter h for marginalization grid')
     parser.add_argument('--hyper-num-sigma', type = int, default = 5,
         help = 'number of sigma grid points in marginalization grid')
     parser.add_argument('--hyper-sigma-min', type = float, default = 0.01,
         help = 'minimum value of hyperparameter sigma for marginalization grid')
-    parser.add_argument('--hyper-sigma-max', type = float, default = 10.,
+    parser.add_argument('--hyper-sigma-max', type = float, default = 1.,
         help = 'maximum value of hyperparameter sigma for marginalization grid')
     parser.add_argument('--omega-k', type = float, default =0.,
         help = 'curvature parameter')
