@@ -168,11 +168,11 @@ def quantiles(histogram,quantile_levels,bin_range,threshold=1e-8):
 
 	Returns:
 		ndarray: Array of estimated abscissa values for each input level. Each value will
-			be in the range specified by bin_range.
+			be in the range specified by bin_range. Any values that should be outside of
+			this range will be clipped.
 
 	Raises:
 		ValueError: bin_range does not have 2 elements.
-		RuntimeError: Some levels fall outside of bin_range so cannot be calculated.
 	"""
 	# Reconstruct the histogram binning.
 	num_bins = len(histogram)-2
@@ -181,18 +181,17 @@ def quantiles(histogram,quantile_levels,bin_range,threshold=1e-8):
 	# Build the cummulative distribution function, including the under/overflow bins.
 	cdf = np.cumsum(histogram)
 	cdf /= cdf[-1]
-	# Check that the requested levels lie within the binning range.
-	if np.min(quantile_levels) < cdf[0]:
-		raise RuntimeError('Quantile level %f is below binning range' % np.min(quantile_levels))
-	if np.max(quantile_levels) > cdf[-2]:
-		raise RuntimeError('Quantile level %f is above binning range' % np.max(quantile_levels))
 	# Skip almost empty bins so that CDF values are increasing for inverse interpolation.
 	use = np.diff(cdf) > threshold
 	use[0] = True
 	# Linearly interpolate CDF levels to estimate the corresponding bin values.
 	inv_cdf = scipy.interpolate.InterpolatedUnivariateSpline(
 		cdf[use[:-1]],bin_edges[use[:-1]],k=1)
-	return inv_cdf(quantile_levels)
+	levels = inv_cdf(quantile_levels)
+	# Perform clipping for levels outside our interpolation range.
+	levels[quantile_levels < cdf[0]] = min_value
+	levels[quantile_levels >= cdf[-2]] = max_value
+	return levels
 
 def calculate_confidence_limits(histograms,confidence_levels,bin_range):
 	"""Calculates confidence limits from distributions represented as histograms.
@@ -210,7 +209,8 @@ def calculate_confidence_limits(histograms,confidence_levels,bin_range):
 	Returns:
 		ndarray: Array of shape (2*ncl+1,nhist) where elements [i,j] and [-i,j] give the
 			limits of the confidence band for confidence_levels[i] of histograms[j], and
-			element [ncl,j] gives the median for histograms[j].
+			element [ncl,j] gives the median for histograms[j]. Values that lie outside of
+			bin_range will be clipped.
 	"""
 	nhist,nbins = histograms.shape
 	lower_quantiles = np.sort(0.5*(1. - np.array(confidence_levels)))
