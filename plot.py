@@ -89,6 +89,7 @@ def main():
                 n_h,h_min,h_max,n_sigma,sigma_min,sigma_max)
             # Initialize array of marginalized posterior NLL values over hyperparameters.
             hyper_nll = np.zeros((2**npost,n_h,n_sigma))
+            nll_const = -np.log(n_samples*n_cycles)
         else:
             assert np.array_equal(DH0,loaded['DH0']),'Found inconsistent DH0'
             assert np.array_equal(DA0,loaded['DA0']),'Found inconsistent DA0'
@@ -121,9 +122,7 @@ def main():
             # as the sum of histogram weights.  All DH and DA histograms have the same sum
             # of weights so we arbitrarily use the first DH histogram.
             marginal_weights = np.sum(loaded['DH_hist'][:,0,:],axis=1)
-            print 'hyper index',hyper_index
-            print marginal_weights
-            hyper_nll[:,i_h,i_sigma] += -np.log(marginal_weights)
+            hyper_nll[:,i_h,i_sigma] += -np.log(marginal_weights) - nll_const
 
     # Loop over posterior permutations.
     for iperm,perm in enumerate(perms):
@@ -141,12 +140,14 @@ def main():
             print hyper_nll[iperm]
             plt.pcolormesh(hyper_grid.sigma_edges,hyper_grid.h_edges,hyper_nll[iperm],
                 cmap='rainbow',rasterized=True)
-            plt.contour(hyper_grid.sigma,hyper_grid.h,hyper_nll[iperm],colors='w')
+            if iperm > 0: # Cannot plot contours for the flat prior.
+                plt.contour(hyper_grid.sigma,hyper_grid.h,hyper_nll[iperm],colors='w')
             plt.xlabel(r'Hyperparameter $\sigma$')
             plt.ylabel(r'Hyperparameter $h$')
             plt.savefig(args.output + 'NLL-' + name + '.' + args.plot_format)
             if args.show:
                 plt.show()
+            plt.close()
 
         if num_plot_rows > 0:
 
@@ -267,6 +268,7 @@ def main():
             plt.savefig(args.output + name + '.' + args.plot_format)
             if args.show:
                 plt.show()
+            plt.close()
 
 if __name__ == '__main__':
     main()
