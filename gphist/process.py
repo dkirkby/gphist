@@ -36,7 +36,7 @@ class HyperParameterLogGrid(object):
 		Returns:
 			tuple: h,sigma index values.
 		"""
-		return index//self.n_h,index%self.n_h
+		return index%self.n_h,index//self.n_h
 
 	def get_values(self,index):
 		"""Lookup hyperparameter values on the grid.
