@@ -16,9 +16,16 @@ class HyperParameterLogGrid(object):
 		sigma_max(float): Maximum grid value of hyperparameter sigma.
 	"""
 	def __init__(self,n_h,h_min,h_max,n_sigma,sigma_min,sigma_max):
-		self.h = h_min*np.power(h_max/h_min,np.arange(n_h)/(n_h-1.))
-		self.sigma = sigma_min*np.power(sigma_max/sigma_min,np.arange(n_sigma)/(n_sigma-1.))
+		h_ratio = np.power(h_max/h_min,1./(n_h-1))
+		sigma_ratio = np.power(sigma_max/sigma_min,1./(n_sigma-1))
+		self.h = h_min*np.power(h_ratio,np.arange(n_h))
+		self.sigma = sigma_min*np.power(sigma_ratio,np.arange(n_sigma))
 		self.n_h = n_h
+		# Initialize log-spaced bin edges to support matplotlib pcolormesh.
+		self.h_edges = h_min*np.power(h_ratio,np.arange(n_h+1)-0.5)
+		self.sigma_edges = sigma_min*np.power(sigma_ratio,np.arange(n_sigma)-0.5)
+		self.h_edges[0],self.h_edges[-1] = self.h[0],self.h[-1]
+		self.sigma_edges[0],self.sigma_edges[-1] = self.sigma[0],self.sigma[-1]
 
 	def decode_index(self,index):
 		"""Decode a flattened grid index.
