@@ -3,6 +3,26 @@
 
 import numpy as np
 import scipy.interpolate
+import scipy.stats
+
+def get_delta_chisq(confidence_levels=(0.6827,0.9543,0.9973),num_dof=2):
+    """
+    Calculate delta(chisq) values.
+
+    The default confidence_level values correspond to the enclosed probabilities
+    of 1,2,3-sigmas for a 1D Gaussian pdf.
+
+    Args:
+    	confidence_levels: Iterable of confidence levels that should be converted to
+    		delta(chisq) values, which do not need to be sorted. In case this argument
+    		is a numpy array, the calculation will be broadcast over it.
+    	num_dof(int): Number of degrees of freedom to assume for the calculation.
+
+    Returns:
+    	ndarray: Array of delta(chisq) values with the same shape as the input
+    		confidence_levels.
+    """
+    return scipy.stats.chi2.isf(1-np.array(confidence_levels),df=num_dof)
 
 def calculate_posteriors_nll(DH,DA,posteriors):
 	"""Calculate -logL for each combination of posterior and prior sample.

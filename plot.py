@@ -90,6 +90,7 @@ def main():
             # Initialize array of marginalized posterior NLL values over hyperparameters.
             hyper_nll = np.zeros((2**npost,n_h,n_sigma))
             nll_const = -np.log(n_samples*n_cycles)
+            nll_levels = gphist.analysis.get_delta_chisq(num_dof=2)
         else:
             assert np.array_equal(DH0,loaded['DH0']),'Found inconsistent DH0'
             assert np.array_equal(DA0,loaded['DA0']),'Found inconsistent DA0'
@@ -137,11 +138,12 @@ def main():
             fig.set_facecolor('white')
             plt.xscale('log')
             plt.yscale('log')
-            print hyper_nll[iperm]
-            plt.pcolormesh(hyper_grid.sigma_edges,hyper_grid.h_edges,hyper_nll[iperm],
+            nll = hyper_nll[iperm] - np.min(hyper_nll[iperm])
+            plt.pcolormesh(hyper_grid.sigma_edges,hyper_grid.h_edges,nll,
                 cmap='rainbow',rasterized=True)
             if iperm > 0: # Cannot plot contours for the flat prior.
-                plt.contour(hyper_grid.sigma,hyper_grid.h,hyper_nll[iperm],colors='w')
+                plt.contour(hyper_grid.sigma,hyper_grid.h,nll,colors='w',
+                    levels=nll_levels,linestyles=('-','--',':'))
             plt.xlabel(r'Hyperparameter $\sigma$')
             plt.ylabel(r'Hyperparameter $h$')
             plt.savefig(args.output + 'NLL-' + name + '.' + args.plot_format)
