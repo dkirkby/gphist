@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Infers the expansion history for a fixed set of assumptions.
+"""Infer the cosmological expansion history using a Gaussian process prior.
 """
 
 import argparse
@@ -19,23 +19,25 @@ def main():
         help = 'number of steps in evolution variable to use')
     parser.add_argument('--num-cycles', type = int, default = 1,
         help = 'number of generation cycles to perform')
-    parser.add_argument('--hyper-h', type = float, default = 0.3,
+    parser.add_argument('--hyper-h', type = float, default = 0.1,
         help = 'vertical scale hyperparameter value to use')
-    parser.add_argument('--hyper-sigma', type = float, default = 0.14,
+    parser.add_argument('--hyper-sigma', type = float, default = 0.02,
         help = 'horizontal scale hyperparameter value to use')
     parser.add_argument('--hyper-index', type = int, default = None,
         help = 'index into hyperparameter marginalization grid to use (ignore if None)')
-    parser.add_argument('--hyper-num-h', type = int, default = 5,
+    parser.add_argument('--hyper-count', type = int, default = 1,
+        help = 'number of consecutive marginalization grid indices to run')
+    parser.add_argument('--hyper-num-h', type = int, default = 10,
         help = 'number of h grid points in marginalization grid')
-    parser.add_argument('--hyper-h-min', type = float, default = 0.02,
+    parser.add_argument('--hyper-h-min', type = float, default = 0.01,
         help = 'minimum value of hyperparameter h for marginalization grid')
-    parser.add_argument('--hyper-h-max', type = float, default = 0.5,
+    parser.add_argument('--hyper-h-max', type = float, default = 1.0,
         help = 'maximum value of hyperparameter h for marginalization grid')
-    parser.add_argument('--hyper-num-sigma', type = int, default = 5,
+    parser.add_argument('--hyper-num-sigma', type = int, default = 20,
         help = 'number of sigma grid points in marginalization grid')
-    parser.add_argument('--hyper-sigma-min', type = float, default = 0.001,
+    parser.add_argument('--hyper-sigma-min', type = float, default = 0.0001,
         help = 'minimum value of hyperparameter sigma for marginalization grid')
-    parser.add_argument('--hyper-sigma-max', type = float, default = 0.5,
+    parser.add_argument('--hyper-sigma-max', type = float, default = 1.0,
         help = 'maximum value of hyperparameter sigma for marginalization grid')
     parser.add_argument('--omega-k', type = float, default =0.,
         help = 'curvature parameter')
@@ -56,19 +58,6 @@ def main():
     parser.add_argument('--debug', action = 'store_true',
         help = 'use special priors to debug DH,DA,BAO constraints')
     args = parser.parse_args()
-
-    # Take hyperparameters from a grid if requested.
-    if args.hyper_index is not None:
-        hyper_grid = gphist.process.HyperParameterLogGrid(
-            args.hyper_num_h,args.hyper_h_min,args.hyper_h_max,
-            args.hyper_num_sigma,args.hyper_sigma_min,args.hyper_sigma_max)
-        h,sigma = hyper_grid.get_values(args.hyper_index)
-    else:
-        h,sigma = args.hyper_h,args.hyper_sigma
-    print 'Using hyperparamters (h,sigma) = (%f,%f)' % (h,sigma)
-
-    # Initialize the Gaussian process prior.
-    prior = gphist.process.SquaredExponentialGaussianProcess(h,sigma)
 
     # Initialize the evolution variable.
     evol = gphist.evolution.LogScale(args.num_steps,args.zstar)
@@ -103,67 +92,89 @@ def main():
         ]
     posterior_names = np.array([p.name for p in posteriors])
 
-    for cycle in range(args.num_cycles):
+    # Initialize a grid of hyperparameters, if requested.
+    if args.hyper_index is not None:
+        hyper_grid = gphist.process.HyperParameterLogGrid(
+            args.hyper_num_h,args.hyper_h_min,args.hyper_h_max,
+            args.hyper_num_sigma,args.hyper_sigma_min,args.hyper_sigma_max)
+    else:
+        hyper_grid = None
 
-        # Initialize the random state for this (seed,cycle) combination in a
-        # portable and reproducible way.
-        random_state = np.random.RandomState([args.seed,cycle])
+    # Loop over hyperparameter values.
+    for hyper_offset in range(args.hyper_count):
 
-        # Generate samples from the prior using sequential seeds.
-        samples = prior.generate_samples(args.num_samples,evol.svalues,random_state)
-
-        # Convert each sample into a corresponding tabulated DH(z).
-        DH = model.get_DH(samples)
-
-        # Calculate the corresponding comoving distance functions DC(z).
-        DC = evol.get_DC(DH)
-
-        # Calculate the corresponding comoving angular scale functions DA(z).
-        DA = gphist.distance.convert_DC_to_DA(DH,DC,args.omega_k)
-
-        # Calculate -logL for each combination of posterior and prior sample.
-        posteriors_nll = gphist.analysis.calculate_posteriors_nll(DH,DA,posteriors)
-
-        # Select some random realizations for each combination of posteriors.
-        # For now, we just sample the first cycle but it might be better to sample
-        # all cycles and then downsample.
-        if cycle == 0:
-            DH_realizations,DA_realizations = gphist.analysis.select_random_realizations(
-                DH,DA,posteriors_nll,args.num_save)
-
-        # Build histograms of DH/DH0 and DA/DA0 for each redshift slice and
-        # all permutations of posteriors. Note that we use DC0 for DA0, i.e., assuming
-        # zero curvature for the baseline. A side effect of this call is that the
-        # DH,DA arrays will be overwritten with the ratios DH/DH0, DA/DA0 (to avoid
-        # allocating additional large arrays).
-        DH_hist,DA_hist = gphist.analysis.calculate_distance_histograms(
-            DH,model.DH0,DA,model.DC0,posteriors_nll,args.num_bins,args.min_ratio,args.max_ratio)
-
-        # Combine with the results of any previous cycles.
-        if cycle == 0:
-            combined_DH_hist = DH_hist
-            combined_DA_hist = DA_hist
+        if hyper_grid:    
+            h,sigma = hyper_grid.get_values(args.hyper_index + hyper_offset)
         else:
-            combined_DH_hist += DH_hist
-            combined_DA_hist += DA_hist            
+            h,sigma = args.hyper_h,args.hyper_sigma
 
-        print 'Finished cycle %d of %d' % (cycle+1,args.num_cycles)
+        print 'Using hyperparameters (h,sigma) = (%f,%f)' % (h,sigma)
 
-    # Save outputs.
-    if args.output:
-        fixed_options = np.array([args.num_samples,args.num_cycles,
-            args.hyper_num_h,args.hyper_num_sigma])
-        variable_options = np.array([args.seed,args.hyper_index])
-        bin_range = np.array([args.min_ratio,args.max_ratio])
-        hyper_range = np.array([args.hyper_h_min,args.hyper_h_max,
-            args.hyper_sigma_min,args.hyper_sigma_max])
-        np.savez('%s.npz' % args.output,
-            DH_hist=combined_DH_hist,DA_hist=combined_DA_hist,
-            DH0=model.DH0,DA0=model.DC0,zevol=evol.zvalues,
-            fixed_options=fixed_options,variable_options=variable_options,
-            bin_range=bin_range,hyper_range=hyper_range,
-            DH_realizations=DH_realizations,DA_realizations=DA_realizations,
-            posterior_names=posterior_names)
+        # Initialize the Gaussian process prior.
+        prior = gphist.process.SquaredExponentialGaussianProcess(h,sigma)
+
+        # Break the calculation into cycles to limit the memory consumption.
+        for cycle in range(args.num_cycles):
+
+            # Initialize a unique random state for this cycle in a
+            # portable and reproducible way.
+            random_state = np.random.RandomState([hyper_offset,args.seed,cycle])
+
+            # Generate samples from the prior using sequential seeds.
+            samples = prior.generate_samples(args.num_samples,evol.svalues,random_state)
+
+            # Convert each sample into a corresponding tabulated DH(z).
+            DH = model.get_DH(samples)
+
+            # Calculate the corresponding comoving distance functions DC(z).
+            DC = evol.get_DC(DH)
+
+            # Calculate the corresponding comoving angular scale functions DA(z).
+            DA = gphist.distance.convert_DC_to_DA(DH,DC,args.omega_k)
+
+            # Calculate -logL for each combination of posterior and prior sample.
+            posteriors_nll = gphist.analysis.calculate_posteriors_nll(DH,DA,posteriors)
+
+            # Select some random realizations for each combination of posteriors.
+            # For now, we just sample the first cycle but it might be better to sample
+            # all cycles and then downsample.
+            if cycle == 0:
+                DH_realizations,DA_realizations = gphist.analysis.select_random_realizations(
+                    DH,DA,posteriors_nll,args.num_save)
+
+            # Build histograms of DH/DH0 and DA/DA0 for each redshift slice and
+            # all permutations of posteriors. Note that we use DC0 for DA0, i.e., assuming
+            # zero curvature for the baseline. A side effect of this call is that the
+            # DH,DA arrays will be overwritten with the ratios DH/DH0, DA/DA0 (to avoid
+            # allocating additional large arrays).
+            DH_hist,DA_hist = gphist.analysis.calculate_distance_histograms(
+                DH,model.DH0,DA,model.DC0,posteriors_nll,args.num_bins,args.min_ratio,args.max_ratio)
+
+            # Combine with the results of any previous cycles.
+            if cycle == 0:
+                combined_DH_hist = DH_hist
+                combined_DA_hist = DA_hist
+            else:
+                combined_DH_hist += DH_hist
+                combined_DA_hist += DA_hist            
+
+            print 'Finished cycle %d of %d' % (cycle+1,args.num_cycles)
+
+        # Save the combined results for these hyperparameters.
+        if args.output:
+            fixed_options = np.array([args.num_samples,args.num_cycles,
+                args.hyper_num_h,args.hyper_num_sigma])
+            variable_options = np.array([args.seed,args.hyper_index])
+            bin_range = np.array([args.min_ratio,args.max_ratio])
+            hyper_range = np.array([args.hyper_h_min,args.hyper_h_max,
+                args.hyper_sigma_min,args.hyper_sigma_max])
+            np.savez('%s.%d.npz' % (args.output,hyper_offset),
+                DH_hist=combined_DH_hist,DA_hist=combined_DA_hist,
+                DH0=model.DH0,DA0=model.DC0,zevol=evol.zvalues,
+                fixed_options=fixed_options,variable_options=variable_options,
+                bin_range=bin_range,hyper_range=hyper_range,
+                DH_realizations=DH_realizations,DA_realizations=DA_realizations,
+                posterior_names=posterior_names)
 
 if __name__ == '__main__':
     main()
