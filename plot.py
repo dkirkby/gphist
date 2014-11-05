@@ -150,7 +150,7 @@ def main():
         if args.nll:
             fig = plt.figure('NLL-'+name,figsize=(10,10))
             fig.set_facecolor('white')
-            plt.xscale('log')
+            plt.xscale('linear')
             plt.yscale('log')
             nll = hyper_nll[iperm] - np.min(hyper_nll[iperm])
             plt.pcolormesh(hyper_grid.sigma_edges,hyper_grid.h_edges,nll,
