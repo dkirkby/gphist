@@ -128,7 +128,7 @@ def main():
         # Accumulate marginalized hyperparameter statistics.
         if hyper_index is not None:
 
-            hyper_offset = int(input_file[9])
+            hyper_offset = int(input_file[-5])
             hyper_index += hyper_offset
             print hyper_index,hyper_offset,input_file
 
