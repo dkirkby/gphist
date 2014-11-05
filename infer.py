@@ -82,13 +82,15 @@ def main():
         ]
     else:
         posteriors = [
+            # Local H0 measurement from Reis 2013.
             gphist.posterior.LocalH0Posterior('H0'),
+            # BOSS LRG BAO from Anderson 2014.
             gphist.posterior.BAOPosterior('LRG',evol,0.57,20.74,0.69,14.95,0.21,-0.52,args.rsdrag),
+            # BOSS Lya-Lya & QSO-Lya from Delubac 2014.
             gphist.posterior.BAOPosterior('Lya',evol,2.3,9.15,1.22,36.46,0.20,-0.38,args.rsdrag),
-            #gphist.posterior.CMBPosterior('CMB',evol,0.1921764,0.1274139e2,
-            #    2.2012293e-06,7.87634e-05,0.0030466538),
-            gphist.posterior.CMBPosterior('CMB',evol,0.1835618,0.1204209e2,
-                6.0964331e-05,0.00465422,0.36262126),
+            # Extended CMB case from Shahab Nov-4 email.
+            gphist.posterior.CMBPosterior('CMB',evol,0.1871433E+00,0.1238882E+02,
+                6.57448e-05,0.00461449,0.338313)
         ]
     posterior_names = np.array([p.name for p in posteriors])
 
@@ -103,7 +105,7 @@ def main():
     # Loop over hyperparameter values.
     for hyper_offset in range(args.hyper_count):
 
-        if hyper_grid:    
+        if hyper_grid:
             h,sigma = hyper_grid.get_values(args.hyper_index + hyper_offset)
         else:
             h,sigma = args.hyper_h,args.hyper_sigma

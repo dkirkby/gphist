@@ -1,5 +1,6 @@
 TODO:
 
+- Do not use "NLL" terminology for "posterior probability" to avoid confusion.
 - Add curves for DH0,DA0.
 - Option to write json file to configure web display of plots
 - Add javascript and html to display plots
