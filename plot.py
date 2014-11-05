@@ -147,7 +147,10 @@ def main():
             fig.set_facecolor('white')
             plt.xscale('log')
             plt.yscale('log')
-            nll = hyper_nll[iperm] - np.min(hyper_nll[iperm])
+            # Transpose so that row,col corresponds to h,sigma.
+            nll = (hyper_nll[iperm] - np.min(hyper_nll[iperm])).transpose()
+            print nll
+            print nll.shape,hyper_grid.sigma_edges
             plt.pcolormesh(hyper_grid.sigma_edges,hyper_grid.h_edges,nll,
                 cmap='rainbow',rasterized=True)
             if iperm > 0: # Cannot plot contours for the flat prior.
