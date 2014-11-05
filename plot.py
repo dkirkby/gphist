@@ -127,6 +127,11 @@ def main():
 
         # Accumulate marginalized hyperparameter statistics.
         if hyper_index is not None:
+
+            hyper_offset = int(input_file[9])
+            hyper_index += hyper_offset
+            print hyper_index,hyper_offset,input_file
+
             i_h,i_sigma = hyper_grid.decode_index(hyper_index)
             # Calculate the posterior weight of this permutation marginalized over the prior
             # as the sum of histogram weights.  All DH and DA histograms have the same sum
@@ -147,10 +152,7 @@ def main():
             fig.set_facecolor('white')
             plt.xscale('log')
             plt.yscale('log')
-            # Transpose so that row,col corresponds to h,sigma.
-            nll = (hyper_nll[iperm] - np.min(hyper_nll[iperm])).transpose()
-            print nll
-            print nll.shape,hyper_grid.sigma_edges
+            nll = hyper_nll[iperm] - np.min(hyper_nll[iperm])
             plt.pcolormesh(hyper_grid.sigma_edges,hyper_grid.h_edges,nll,
                 cmap='rainbow',rasterized=True)
             if iperm > 0: # Cannot plot contours for the flat prior.
