@@ -6,11 +6,11 @@ import argparse
 import glob
 
 import numpy as np
-import matplotlib.pyplot as plt
+# matplotlib is imported inside main()
 
 import gphist
 
-clight = 299792.458
+clight = 299792.458 # speed of light in km/s
 
 def main():
     # Parse command-line arguments.
@@ -58,6 +58,13 @@ def main():
         print 'No plots selected.'
         return 0
     show_examples = not args.no_examples
+
+    # Initialize matplotlib.
+    import matplotlib as mpl
+    if not args.show:
+        # Use the default backend, which does not require X11 on unix systems.
+        mpl.use('Agg')
+    import matplotlib.pyplot as plt
 
     # Combine the histograms from each input file.
     random_states = { }
