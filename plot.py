@@ -110,11 +110,13 @@ def main():
         seed,hyper_index = variable_options
 
         # Check that each input was calculated using a different random state.
+        '''
         random_state = seed
         if random_state in random_states:
             print 'ERROR: random state %r is duplicated in %s' % (random_state,input_file)
             return -1
         random_states[random_state] = input_file
+        '''
 
         # Accumulate marginalized hyperparameter statistics.
         if hyper_index is not None:
