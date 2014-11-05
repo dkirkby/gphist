@@ -17,7 +17,7 @@ def convert_DC_to_DA(DH,DC,omega_k):
 
 	Returns:
 		ndarray: a reference to the input array DC which now contains
-			values of DC.
+			values of DA.
 	"""
 	if omega_k < 0:
 		w = DH[:,0]/np.sqrt(-omega_k)

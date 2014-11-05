@@ -95,17 +95,46 @@ def get_permutations(n):
 		mask[iperm] = np.bitwise_and(iperm,bits) > 0
 	return mask
 
-def calculate_distance_histograms(DH,DH0,DA,DA0,nll,num_bins,min_value,max_value):
-	"""Build histograms of DH/DH0 and DA/DA0.
-
-	Calculate histograms for all permutations of posterior weightings. A side effect
-	of calling this function is that values in the DH,DA arrays will be replaced with
-	scaled values of DH/DH0,DA/DA0 in order to avoid allocating additional large arrays.
+def downsample(num_after,z,DH,DA,DH0,DA0):
+	"""Downsample DH,DA expansion histories in preparation for histogramming.
 
 	Args:
+		num_after(int): Desired number of evolution steps after downsampling.
+		z(ndarray): Array of input redshifts.
 		DH(ndarray): Array of shape (nsamples,nz) of DH(z) values to use.
 		DH0(ndarray): Array of shape (nz,) used to normalize each DH(z).
 		DA(ndarray): Array of shape (nsamples,nz-1) of DA(z) values to use.
+		DA0(ndarray): Array of shape (nz-1,) used to normalize each DA(z).
+
+	Returns:
+		tuple: Arrays of downsampled redshifts z and distances DH, DA, DH0, DA0.
+			The DH,DA arrays will be transposed so that the values needed to fill
+			each histogram are consecutive.
+
+	Raises:
+		AssertionError: Unexpected sizes of z,DH0,DA0,DA or invalid num_after.
+	"""
+	num_samples,num_before = DH.shape
+	assert DH0.shape == (num_before,),'Unexpected DH0.shape'
+	assert DA0.shape == (num_before-1,),'Unexpected DA0.shape'
+	assert DA.shape == (num_samples,num_before-1),'Unexpected DA.shape'
+	assert (num_before-1)%(num_after-1) == 0,'Invalid num_after'
+
+	downsampling_factor = (num_before-1)//(num_after-1)
+	DH_indices = downsampling_factor*np.arange(num_after)
+	DA_indices = DH_indices[1:]-1
+
+	return z[DH_indices],DH.T[DH_indices],DA.T[DA_indices],DH0[DH_indices],DA0[DA_indices]
+
+def calculate_distance_histograms(DH,DH0,DA,DA0,nll,num_bins,min_value,max_value):
+	"""Build histograms of DH/DH0 and DA/DA0.
+
+	Calculate histograms for all permutations of posterior weightings.
+
+	Args:
+		DH(ndarray): Array of shape (nz,nsamples) of DH(z) values to use.
+		DH0(ndarray): Array of shape (nz,) used to normalize each DH(z).
+		DA(ndarray): Array of shape (nz-1,nsamples) of DA(z) values to use.
 		DA0(ndarray): Array of shape (nz-1,) used to normalize each DA(z).
 		nll(ndarray): Array of shape (npost,nsamples) containing the nll
 			posterior weights to use.
@@ -122,26 +151,22 @@ def calculate_distance_histograms(DH,DH0,DA,DA0,nll,num_bins,min_value,max_value
 			For example, iperm = 5 = 2^0 + 2^2 combines posteriors 0 and 2.
 
 	Raises:
-		AssertionError: Unexpected sizes of DH,DH0,DA,DA0.
+		AssertionError: Unexpected sizes of DH0,DA0,DA,nll.
 	"""
-	nsamples,nz = DH.shape
 	npost = len(nll)
+	nz,nsamples = DH.shape
 	# Check sizes.
-	assert DH0.shape == (nz,)
-	assert DA0.shape == (nz-1,)
-	assert DA.shape == (nsamples,nz-1)
-	assert nll.shape == (npost,nsamples)
-	# Rescale DH,DA in place to avoid allocating additional large arrays.
-	DH /= DH0
-	DA /= DA0
-	# Create transposed views so that the bin index arrays created below have
-	# sample number increasing fastest.
-	DH_ratio = DH.T
-	DA_ratio = DA.T
+	assert DH0.shape == (nz,),'Unexpected DH0.shape'
+	assert DA0.shape == (nz-1,),'Unexpected DA0.shape'
+	assert DA.shape == (nz-1,nsamples),'Unexpected DA.shape'
+	assert nll.shape == (npost,nsamples),'Unexpected nll.shape'
+	# Rescale DH,DA by DH0,DA0.
+	DH_ratio = DH/DH0[:,np.newaxis]
+	DA_ratio = DA/DA0[:,np.newaxis]
 	# Initialize posterior permutations.
 	nperm = 2**npost
 	perms = get_permutations(npost)
-	# Allocate output arrays.
+	# Allocate output arrays for the histogram bin values.
 	DH_hist = np.empty((nperm,nz,num_bins+2))
 	DA_hist = np.empty((nperm,nz-1,num_bins+2))
 	# Calculate bin indices for DH/DH0. We process DH/DH0 and DA/DA0 separately
@@ -153,9 +178,9 @@ def calculate_distance_histograms(DH,DH0,DA,DA0,nll,num_bins,min_value,max_value
 		perm_nll = np.sum(nll[perm],axis=0)  # Returns zero when perm entries all False.
 		perm_weights = np.exp(-perm_nll)
 		# Build histograms of DH/DH0 for each redshift slice.
-		for iz in range(nz):
-			DH_hist[iperm,iz] = np.bincount(
-				bin_indices[iz],weights=perm_weights,minlength=num_bins+2)
+		for ihist in range(nz):
+			DH_hist[iperm,ihist] = np.bincount(
+				bin_indices[ihist],weights=perm_weights,minlength=num_bins+2)
 	# Calculate bin indices for DA/DA0, replacing the large array allocated above.
 	bin_indices = get_bin_indices(DA_ratio,num_bins,min_value,max_value)
 	# Loop over permutations.
@@ -164,9 +189,9 @@ def calculate_distance_histograms(DH,DH0,DA,DA0,nll,num_bins,min_value,max_value
 		perm_nll = np.sum(nll[perm],axis=0)  # Returns zero when perm entries all False.
 		perm_weights = np.exp(-perm_nll)
 		# Build histograms of DA/DA0 for each redshift slice.
-		for iz in range(nz-1):
-			DA_hist[iperm,iz] = np.bincount(
-				bin_indices[iz],weights=perm_weights,minlength=num_bins+2)
+		for ihist in range(nz-1):
+			DA_hist[iperm,ihist] = np.bincount(
+				bin_indices[ihist],weights=perm_weights,minlength=num_bins+2)
 	return DH_hist,DA_hist
 
 def quantiles(histogram,quantile_levels,bin_range,threshold=1e-8):
