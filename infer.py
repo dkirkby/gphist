@@ -31,9 +31,9 @@ def main():
         help = 'number of consecutive marginalization grid indices to run')
     parser.add_argument('--hyper-num-h', type = int, default = 10,
         help = 'number of h grid points in marginalization grid')
-    parser.add_argument('--hyper-h-min', type = float, default = 0.01,
+    parser.add_argument('--hyper-h-min', type = float, default = 0.02,
         help = 'minimum value of hyperparameter h for marginalization grid')
-    parser.add_argument('--hyper-h-max', type = float, default = 1.0,
+    parser.add_argument('--hyper-h-max', type = float, default = 0.5,
         help = 'maximum value of hyperparameter h for marginalization grid')
     parser.add_argument('--hyper-num-sigma', type = int, default = 20,
         help = 'number of sigma grid points in marginalization grid')
