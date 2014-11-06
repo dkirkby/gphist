@@ -47,11 +47,11 @@ def main():
         help = 'nominal redshift of last scattering')
     parser.add_argument('--rsdrag', type = float, default = 147.36,
         help = 'nominal sound horizon rs(zdrag) at the drag epoch in Mpc')
-    parser.add_argument('--num-bins', type = int, default = 2000,
+    parser.add_argument('--num-bins', type = int, default = 1000,
         help = 'number of bins to use for histogramming DH/DH0 and DA/DA0')
-    parser.add_argument('--min-ratio', type = float, default = 0.,
+    parser.add_argument('--min-ratio', type = float, default = 0.5,
         help = 'minimum ratio for histogramming DH/DH0 and DA/DA0')
-    parser.add_argument('--max-ratio', type = float, default = 2.,
+    parser.add_argument('--max-ratio', type = float, default = 1.5,
         help = 'maximum ratio for histogramming DH/DH0 and DA/DA0')
     parser.add_argument('--num-save', type = int, default = 5,
         help = 'number of prior realizations to save for each combination of posteriors')
