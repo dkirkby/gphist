@@ -120,24 +120,17 @@ def main():
             DA_hist += loaded['DA_hist']
             variable_options = loaded['variable_options']
 
-        seed,hyper_index = variable_options
+        seed,hyper_index,hyper_offset = variable_options
 
         # Check that each input was calculated using a different random state.
-        '''
-        random_state = seed
+        random_state = (seed,hyper_offset)
         if random_state in random_states:
             print 'ERROR: random state %r is duplicated in %s' % (random_state,input_file)
             return -1
         random_states[random_state] = input_file
-        '''
 
         # Accumulate marginalized hyperparameter statistics.
         if hyper_index is not None:
-
-            hyper_offset = int(input_file[-5])
-            hyper_index += hyper_offset
-            print hyper_index,hyper_offset,input_file
-
             i_h,i_sigma = hyper_grid.decode_index(hyper_index)
             # Calculate the posterior weight of this permutation marginalized over the prior
             # as the sum of histogram weights.  All DH and DA histograms have the same sum

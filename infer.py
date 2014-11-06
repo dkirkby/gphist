@@ -113,8 +113,10 @@ def main():
     for hyper_offset in range(args.hyper_count):
 
         if hyper_grid:
-            h,sigma = hyper_grid.get_values(args.hyper_index + hyper_offset)
+            hyper_index = args.hyper_index + hyper_offset
+            h,sigma = hyper_grid.get_values(hyper_index)
         else:
+            hyper_index = None
             h,sigma = args.hyper_h,args.hyper_sigma
 
         print 'Using hyperparameters (h,sigma) = (%f,%f)' % (h,sigma)
@@ -130,7 +132,7 @@ def main():
 
             # Initialize a unique random state for this cycle in a
             # portable and reproducible way.
-            random_state = np.random.RandomState([hyper_offset,args.seed,cycle])
+            random_state = np.random.RandomState([args.seed,hyper_offset,cycle])
 
             # Generate samples from the prior using sequential seeds.
             samples = prior.generate_samples(args.num_samples,evol.svalues,random_state)
@@ -179,7 +181,7 @@ def main():
         if args.output:
             fixed_options = np.array([args.num_samples,args.num_cycles,
                 args.hyper_num_h,args.hyper_num_sigma])
-            variable_options = np.array([args.seed,args.hyper_index])
+            variable_options = np.array([args.seed,hyper_index,hyper_offset])
             bin_range = np.array([args.min_ratio,args.max_ratio])
             hyper_range = np.array([args.hyper_h_min,args.hyper_h_max,
                 args.hyper_sigma_min,args.hyper_sigma_max])
