@@ -231,27 +231,30 @@ class BAOPosterior(GaussianPdf2D):
 
 	Args:
 		name(str): Name to associate with this posterior.
-		evol: Evolution variable to use for interpolating in redshift.
-		z(double): Redshift where posterior should be evaluated.
+		zprior(ndarray): Redshifts where prior is sampled, in increasing order.
+		z(double): Redshift where posterior should be evaluated, which must be
+			an element of zprior.
 		apar(double): Line-of-sight (parallel) scale factor measured using BAO.
 		sigma_apar(double): RMS error on measured apar.
 		aperp(double): Transverse (perpendicular) scale factor measured using BAO.
 		sigma_aperp(double): RMS error on measured aperp.
 		rho(double): Correlation coefficient between apar and aperp.
 			Must be between -1 and +1.
+
+	Raises:
+		AssertionError: The redshift z is not an element of zprior.
 	"""
-	def __init__(self,name,evol,z,apar,sigma_apar,aperp,sigma_aperp,rho,rsdrag):
+	def __init__(self,name,zprior,z,apar,sigma_apar,aperp,sigma_aperp,rho,rsdrag):
 		self.name = name
-		self.s = evol.s_of_z(z)
-		self.evol = evol
+		self.iprior = np.argmax(zprior==z)
+		assert zprior[self.iprior] == z,'z not in zprior'
 		self.rsdrag = rsdrag
 		GaussianPdf2D.__init__(self,apar,sigma_apar,aperp,sigma_aperp,rho)
 
 	def get_nll(self,DH,DA):
 		"""Calculate -logL for the posterior applied to a set of expansion histories.
 
-		The posterior is applied simultaneously to DH(z)/rs(zd) and DA(z)/rs(zd) using
-		cubic interpolation in s to estimate the values of DH(z) and DA(z).
+		The posterior is applied simultaneously to DH(z)/rs(zd) and DA(z)/rs(zd).
 
 		Args:
 			DH(ndarray): Array of shape (nsamples,nz) of DH(z) values to use.
@@ -260,7 +263,5 @@ class BAOPosterior(GaussianPdf2D):
 		Returns:
 			ndarray: Array of -logL values calculated at each input value.
 		"""
-		DH_interpolator = scipy.interpolate.interp1d(self.evol.svalues,DH)
-		DA_interpolator = scipy.interpolate.interp1d(self.evol.svalues[1:],DA)
-		values = np.vstack([DH_interpolator(self.s),DA_interpolator(self.s)])/self.rsdrag
+		values = np.vstack([DH[:,self.iprior],DA[:,self.iprior-1]])/self.rsdrag
 		return GaussianPdf2D.get_nll(self,values.T)

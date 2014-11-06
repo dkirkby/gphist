@@ -17,15 +17,20 @@ class LogScale(object):
 
 	Args:
 		nsteps(int): Number of equally spaced steps to use between s=0
-			and s=1.
+			and s=1. Any redshifts in z_extra will be in addition to these steps.
 		zmax(float): Maximum redshift corresponding to s=1.
+		z_extra(ndarray): List of intermediate redshifts where the prior should
+			be sampled.
 	"""
-	def __init__(self,nsteps,zmax):
+	def __init__(self,nsteps,zmax,z_extra=None):
 		self.zmax = zmax
 		# Initialize equally spaced values of the evolution variable s.
 		self.svalues = np.linspace(0.,1.,nsteps)
-		# Calculate the corresponding zvalues for the specified z*.
+		# Calculate the corresponding zvalues.
 		self.zvalues = self.z_of_s(self.svalues)
+		if z_extra:
+			self.zvalues = np.sort(np.concatenate([self.zvalues,z_extra]))
+			self.svalues = self.s_of_z(self.zvalues)
 		# Initialize the quadrature coefficients needed by get_DC.
 		delta = np.diff(self.zvalues)/np.diff(self.svalues)/np.log(1+zmax)
 		self.quad_coef1 = 1 + self.zvalues[:-1] - delta

@@ -13,17 +13,15 @@ def main():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--seed', type = int, default = 26102014,
         help = 'random seed to use for sampling the prior')
-    parser.add_argument('--num-samples', type = int, default = 100000,
+    parser.add_argument('--num-samples', type = int, default = 1000000,
         help = 'number of samples to generate')
-    parser.add_argument('--num-sample-steps', type = int, default = 501,
+    parser.add_argument('--num-sample-steps', type = int, default = 50,
         help = 'number of evolution variable steps to use for sampling the prior')
-    parser.add_argument('--num-hist-steps', type = int, default = 51,
-        help = 'number of evolution variable steps to use for distance histograms')
     parser.add_argument('--num-cycles', type = int, default = 1,
         help = 'number of generation cycles to perform')
     parser.add_argument('--hyper-h', type = float, default = 0.1,
         help = 'vertical scale hyperparameter value to use')
-    parser.add_argument('--hyper-sigma', type = float, default = 0.02,
+    parser.add_argument('--hyper-sigma', type = float, default = 0.05,
         help = 'horizontal scale hyperparameter value to use')
     parser.add_argument('--hyper-index', type = int, default = None,
         help = 'index into hyperparameter marginalization grid to use (ignore if None)')
@@ -57,49 +55,35 @@ def main():
         help = 'number of prior realizations to save for each combination of posteriors')
     parser.add_argument('--output', type = str, default = None,
         help = 'name of output file to write (the extension .npz will be added)')
-    parser.add_argument('--debug', action = 'store_true',
-        help = 'use special priors to debug DH,DA,BAO constraints')
     args = parser.parse_args()
 
-    # Check that the number of histogramming and sampling evolution steps are compatible.
-    if (args.num_sample_steps-1)%(args.num_hist_steps-1) != 0:
-        print 'num-sample-steps and num-hist-steps are not compatible.'
-        return -1
+    # Define intermediate redshifts where the prior needs to be sampled.
+    zLRG = 0.57
+    zLya = 2.3
+    z_extra = [zLRG, zLya]
 
     # Initialize the evolution variable.
-    evol = gphist.evolution.LogScale(args.num_sample_steps,args.zstar)
+    evol = gphist.evolution.LogScale(args.num_sample_steps,args.zstar,z_extra)
 
     # Initialize the distance model.
     model = gphist.distance.HubbleDistanceModel(evol)
 
     # Initialize the posteriors to use.
-    if args.debug:
-        # Compare independent DH,DA constraints at z ~ 2.1 with a simultaneous BAO constraint.
-        iz = 8
-        zref = evol.zvalues[iz]
-        print 'Debug: z,DH(z),DC(z) =',zref,model.DH0[iz],model.DC0[iz-1]
-        frac = 0.01 # fractional error of constraints
-        rho = 0.9 # DH-DC correlation for 2D constraint
-        posteriors = [
-            gphist.posterior.DHPosterior('DH',evol,zref,model.DH0[iz],frac*model.DH0[iz]),
-            gphist.posterior.DAPosterior('DA',evol,zref,model.DC0[iz-1],frac*model.DC0[iz-1]),
-            gphist.posterior.BAOPosterior('BAO',evol,zref,
-                model.DH0[iz]/args.rsdrag,frac*model.DH0[iz]/args.rsdrag,
-                model.DC0[iz-1]/args.rsdrag,frac*model.DC0[iz-1]/args.rsdrag,rho,args.rsdrag)
-        ]
-    else:
-        posteriors = [
-            # Local H0 measurement from Reis 2013.
-            gphist.posterior.LocalH0Posterior('H0'),
-            # BOSS LRG BAO from Anderson 2014.
-            gphist.posterior.BAOPosterior('LRG',evol,0.57,20.74,0.69,14.95,0.21,-0.52,args.rsdrag),
-            # BOSS Lya-Lya & QSO-Lya from Delubac 2014.
-            gphist.posterior.BAOPosterior('Lya',evol,2.3,9.15,1.22,36.46,0.20,-0.38,args.rsdrag),
-            # Extended CMB case from Shahab Nov-4 email.
-            gphist.posterior.CMBPosterior('CMB',evol,0.1871433E+00,0.1238882E+02,
-                6.57448e-05,0.00461449,0.338313)
-        ]
+    posteriors = [
+        # Local H0 measurement from Reis 2013.
+        gphist.posterior.LocalH0Posterior('H0'),
+        # BOSS LRG BAO from Anderson 2014.
+        gphist.posterior.BAOPosterior('LRG',evol.zvalues,zLRG,
+            20.74,0.69,14.95,0.21,-0.52,args.rsdrag),
+        # BOSS Lya-Lya & QSO-Lya from Delubac 2014.
+        gphist.posterior.BAOPosterior('Lya',evol.zvalues,zLya,
+            9.15,1.22,36.46,0.20,-0.38,args.rsdrag),
+        # Extended CMB case from Shahab Nov-4 email.
+        gphist.posterior.CMBPosterior('CMB',evol,0.1871433E+00,0.1238882E+02,
+            6.57448e-05,0.00461449,0.338313)
+    ]
     posterior_names = np.array([p.name for p in posteriors])
+    return -1
 
     # Initialize a grid of hyperparameters, if requested.
     if args.hyper_index is not None:
