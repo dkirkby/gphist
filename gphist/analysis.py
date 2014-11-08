@@ -95,37 +95,6 @@ def get_permutations(n):
 		mask[iperm] = np.bitwise_and(iperm,bits) > 0
 	return mask
 
-def downsample(num_after,z,DH,DA,DH0,DA0):
-	"""Downsample DH,DA expansion histories in preparation for histogramming.
-
-	Args:
-		num_after(int): Desired number of evolution steps after downsampling.
-		z(ndarray): Array of input redshifts.
-		DH(ndarray): Array of shape (nsamples,nz) of DH(z) values to use.
-		DH0(ndarray): Array of shape (nz,) used to normalize each DH(z).
-		DA(ndarray): Array of shape (nsamples,nz-1) of DA(z) values to use.
-		DA0(ndarray): Array of shape (nz-1,) used to normalize each DA(z).
-
-	Returns:
-		tuple: Arrays of downsampled redshifts z and distances DH, DA, DH0, DA0.
-			The DH,DA arrays will be transposed so that the values needed to fill
-			each histogram are consecutive.
-
-	Raises:
-		AssertionError: Unexpected sizes of z,DH0,DA0,DA or invalid num_after.
-	"""
-	num_samples,num_before = DH.shape
-	assert DH0.shape == (num_before,),'Unexpected DH0.shape'
-	assert DA0.shape == (num_before-1,),'Unexpected DA0.shape'
-	assert DA.shape == (num_samples,num_before-1),'Unexpected DA.shape'
-	assert (num_before-1)%(num_after-1) == 0,'Invalid num_after'
-
-	downsampling_factor = (num_before-1)//(num_after-1)
-	DH_indices = downsampling_factor*np.arange(num_after)
-	DA_indices = DH_indices[1:]-1
-
-	return z[DH_indices],DH.T[DH_indices],DA.T[DA_indices],DH0[DH_indices],DA0[DA_indices]
-
 def calculate_distance_histograms(DH,DH0,DA,DA0,nlp,num_bins,min_value,max_value):
 	"""Build histograms of DH/DH0 and DA/DA0.
 

@@ -102,27 +102,27 @@ def main():
 
         # Calculate the amount of oversampling required in the evolution variable to
         # sample the prior given this value of sigma.
-        oversampling = int(math.ceil(2./sigma/args.num_evol_hist))
-
-        # Calculate the number of prior samples that fit within our memory budget
-        # with this oversampling.
-        num_evol = oversampling*args.num_evol_hist
-        samples_per_cycle = int(math.floor(1e9*args.max_array_size/(16.*num_evol)))
-        samples_per_cycle = min(args.num_samples,samples_per_cycle)
+        min_num_evol = math.ceil(2./sigma)
+        num_evol,evol_oversampling,samples_per_cycle = gphist.evolution.initialize(
+            min_num_evol,args.num_evol_hist,args.num_samples,args.max_array_size)
 
         print 'Using %dx oversampling and %d cycles of %d samples/cycle.' % (
-            oversampling,math.ceil(1.*args.num_samples/samples_per_cycle),samples_per_cycle)
+            evol_oversampling,math.ceil(1.*args.num_samples/samples_per_cycle),
+            samples_per_cycle)
 
         # Initialize the evolution variable.
-        evol = gphist.evolution.LogScale(num_evol,posterior_redshifts)
+        evol = gphist.evolution.LogScale(num_evol,evol_oversampling,posterior_redshifts)
 
         # Initialize the distance model.
         model = gphist.distance.HubbleDistanceModel(evol)
+        DH0 = model.DH0
+        DA0 = model.DC0 # assuming zero curvature
 
         # Initialize a unique random state.
         random_state = np.random.RandomState([args.seed,hyper_offset])
 
         # Break the calculation into cycles to limit the memory consumption.
+        combined_DH_hist = None
         samples_remaining = args.num_samples
         while samples_remaining > 0:
 
@@ -158,12 +158,15 @@ def main():
             if cycle == 0:
                 DH_realizations,DA_realizations = gphist.analysis.select_random_realizations(
                     DH,DA,posteriors_nlp,args.num_save)
+            """
 
-            # Downsample for histogramming. Note that we use DC0 for DA0, i.e., assuming
-            # zero curvature for the baseline.
-            z_ds,DH_ds,DA_ds,DH0_ds,DA0_ds = gphist.analysis.downsample(
-                args.num_hist_steps,evol.zvalues,DH,DA,model.DH0,model.DC0)
+            # Downsample distance functions in preparation for histogramming.
+            i_ds = evol.downsampled_indices
+            z_ds,DH0_ds,DA0_ds = evol.zvalues[i_ds],DH0[i_ds],DA0[i_ds]
+            # Transpose so that values to histogram are consecutive.
+            DH_ds,DA_ds = DH[:,i_ds].T,DA[:,i_ds].T
 
+            """
             # Build histograms of DH/DH0 and DA/DA0 for each redshift slice and
             # all permutations of posteriors.
             DH_hist,DA_hist = gphist.analysis.calculate_distance_histograms(
@@ -171,7 +174,7 @@ def main():
                 args.num_bins,args.min_ratio,args.max_ratio)
 
             # Combine with the results of any previous cycles.
-            if cycle == 0:
+            if combined_DH_hist is None:
                 combined_DH_hist = DH_hist
                 combined_DA_hist = DA_hist
             else:
@@ -194,7 +197,7 @@ def main():
             np.savez(output_name,
                 DH_hist=combined_DH_hist,DA_hist=combined_DA_hist,
                 DH0=DH0_ds,DA0=DA0_ds,zhist=z_ds,zevol=evol.zvalues,
-                DH0_full=model.DH0,DA0_full=model.DC0,
+                DH0_full=DH0,DA0_full=DA0,
                 fixed_options=fixed_options,variable_options=variable_options,
                 bin_range=bin_range,hyper_range=hyper_range,
                 DH_realizations=DH_realizations,DA_realizations=DA_realizations,
