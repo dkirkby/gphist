@@ -24,15 +24,15 @@ def get_delta_chisq(confidence_levels=(0.6827,0.9543,0.9973),num_dof=2):
     """
     return scipy.stats.chi2.isf(1-np.array(confidence_levels),df=num_dof)
 
-def calculate_posteriors_nll(DH,DA,posteriors):
+def calculate_posteriors_nll(zprior,DH,DA,posteriors):
 	"""Calculate -logL for each combination of posterior and prior sample.
 
 	Args:
+		zprior(ndarray): Redshifts where prior is sampled, in increasing order.
 		DH(ndarray): Array of shape (nsamples,nz) of DH(z) values to use.
-		DA(ndarray): Array of shape (nsamples,nz-1) of DA(z) values to use.
-		posteriors(list): List of posteriors to use. Each posterior must
-			implement a method get_nll(DH,DA) and return an array of nsamples
-			-logL values.
+		DA(ndarray): Array of shape (nsamples,nz) of DA(z) values to use.
+		posteriors(list): List of posteriors to use. Each posterior should
+			inherit from the posterior.Posterior base class.
 
 	Returns:
 		ndarray: An array of shape (npost,nsamples) containing the nll values
@@ -42,7 +42,7 @@ def calculate_posteriors_nll(DH,DA,posteriors):
 	npost = len(posteriors)
 	nll = np.empty((npost,nsamples))
 	for ipost,post in enumerate(posteriors):
-		nll[ipost] = post.get_nll(DH,DA)
+		nll[ipost] = post.get_nll(zprior,DH,DA)
 	return nll
 
 def get_bin_indices(data,num_bins,min_value,max_value):

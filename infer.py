@@ -145,10 +145,11 @@ def main():
             # Calculate the corresponding comoving angular scale functions DA(z).
             DA = gphist.distance.convert_DC_to_DA(DH,DC,args.omega_k)
 
-            """
             # Calculate -logL for each combination of posterior and prior sample.
-            posteriors_nll = gphist.analysis.calculate_posteriors_nll(DH,DA,posteriors)
+            posteriors_nll = gphist.analysis.calculate_posteriors_nll(
+                evol.zvalues,DH,DA,posteriors)
 
+            """
             # Select some random realizations for each combination of posteriors.
             # Note that when sigma < 1/num_sample_steps, the realizations cannot be
             # reconstructed by interpolation.

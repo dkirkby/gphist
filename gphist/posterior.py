@@ -37,11 +37,12 @@ class GaussianPdf(object):
 		The calculation is automatically broadcast over multiple value vectors.
 
 		Args:
-			values(ndarray): Array values where the PDF should be evaluated, which can
-				be a single vector of length npar or else a array of vectors.
+			values(ndarray): Array of values where the PDF should be evaluated with
+				shape (neval,ndim) where ndim is the dimensionality of the PDF and
+				neval is the number of points where the PDF should be evaluated.
 
 		Returns:
-			float: Array of -logL values calculated at each input value.
+			float: Array of length neval -logL values calculated at each input point.
 
 		Raises:
 			ValueError: Values can not be broadcast together with our mean vector.
@@ -62,6 +63,18 @@ class GaussianPdf1D(GaussianPdf):
 		mean = np.array([central_value])
 		covariance = np.array([[sigma**2]])
 		GaussianPdf.__init__(self,mean,covariance)
+
+	def get_nll(self,values):
+		"""Calculates -logL for the PDF evaluated at specified values.
+
+		Args:
+			values(ndarray): Array of values where the PDF should be evaluated with
+				length neval.
+
+		Returns:
+			float: Array of length neval -logL values calculated at each input point.
+		"""
+		return GaussianPdf.get_nll(self,values[:,np.newaxis])
 
 class GaussianPdf2D(GaussianPdf):
 	"""Represents a specialization of GaussianPdf to the 2D case.
@@ -114,7 +127,7 @@ class Posterior(object):
 
 			zprior(ndarray): Redshifts where prior is sampled, in increasing order.
 			DH(ndarray): Array of shape (nsamples,nz) of DH(z) values to use.
-			DA(ndarray): Array of shape (nsamples,nz-1) of DA(z) values to use.
+			DA(ndarray): Array of shape (nsamples,nz) of DA(z) values to use.
 
 		Returns:
 			ndarray: Array of -logL values calculated at each input value.
@@ -125,7 +138,7 @@ class Posterior(object):
 		iprior = np.argmax(zprior==self.zpost)
 		assert zprior[iprior] == self.zpost,'zpost is not in zprior'
 		DHz = DH[:,iprior]
-		DAz = DA[:,iprior-1] if iprior > 0 else None
+		DAz = DA[:,iprior]
 		assert id(DH)==id(DHz.base)
 		assert id(DA)==id(DAz.base)
 		return self.constraint(DHz,DAz)
@@ -142,7 +155,7 @@ class LocalH0Posterior(Posterior):
 		self.pdf = GaussianPdf1D(H0,H0_error)
 		Posterior.__init__(self,name,0.)
 
-	def constraint(DHz,DAz):
+	def constraint(self,DHz,DAz):
 		"""Calculate -logL for the posterior applied to a set of expansion histories.
 
 		The posterior is applied to c/H(z=0).
@@ -236,7 +249,7 @@ class CMBPosterior(Posterior):
 			ndarray: Array of -logL values calculated at each input value.
 		"""
 		values = np.vstack([DHz,DAz])
-		return self.pdf.get_nll(self,values.T)
+		return self.pdf.get_nll(values.T)
 
 class BAOPosterior(Posterior):
 	"""Posterior constraint on the parallel and perpendicular scale factors from BAO.
@@ -272,4 +285,4 @@ class BAOPosterior(Posterior):
 			ndarray: Array of -logL values calculated at each input value.
 		"""
 		values = np.vstack([DHz,DAz])/self.rsdrag
-		return self.pdf.get_nll(self,values.T)
+		return self.pdf.get_nll(values.T)
