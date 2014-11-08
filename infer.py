@@ -3,6 +3,7 @@
 """
 
 import argparse
+import math
 
 import numpy as np
 
@@ -74,16 +75,7 @@ def main():
             6.57448e-05,0.00461449,0.338313)
     ]
     posterior_names = np.array([p.name for p in posteriors])
-    zpost = np.array([p.zpost for p in posteriors])
-
-    # Initialize the evolution variable.
-    evol = gphist.evolution.LogScale(args.num_evol_hist,zpost)
-
-    print evol.zvalues
-    return -1
-
-    # Initialize the distance model.
-    model = gphist.distance.HubbleDistanceModel(evol)
+    posterior_redshifts = np.array([p.zpost for p in posteriors])
 
     # Initialize a grid of hyperparameters, if requested.
     if args.hyper_index is not None:
@@ -108,18 +100,44 @@ def main():
         # Initialize the Gaussian process prior.
         prior = gphist.process.SquaredExponentialGaussianProcess(h,sigma)
 
+        # Calculate the amount of oversampling required in the evolution variable to
+        # sample the prior given this value of sigma.
+        oversampling = int(math.ceil(2./sigma/args.num_evol_hist))
+
+        # Calculate the number of prior samples that fit within our memory budget
+        # with this oversampling.
+        num_evol = oversampling*args.num_evol_hist
+        samples_per_cycle = int(math.floor(1e9*args.max_array_size/(16.*num_evol)))
+        samples_per_cycle = min(args.num_samples,samples_per_cycle)
+
+        print 'Using %dx oversampling and %d cycles of %d samples/cycle.' % (
+            oversampling,math.ceil(1.*args.num_samples/samples_per_cycle),samples_per_cycle)
+
+        # Initialize the evolution variable.
+        evol = gphist.evolution.LogScale(num_evol,posterior_redshifts)
+
+        # Initialize the distance model.
+        model = gphist.distance.HubbleDistanceModel(evol)
+
+        # Initialize a unique random state.
+        random_state = np.random.RandomState([args.seed,hyper_offset])
+
         # Break the calculation into cycles to limit the memory consumption.
-        for cycle in range(args.num_cycles):
+        samples_remaining = args.num_samples
+        while samples_remaining > 0:
 
-            # Initialize a unique random state for this cycle in a
-            # portable and reproducible way.
-            random_state = np.random.RandomState([args.seed,hyper_offset,cycle])
+            samples_per_cycle = min(samples_per_cycle,samples_remaining)
+            samples_remaining -= samples_per_cycle
 
-            # Generate samples from the prior using sequential seeds.
-            samples = prior.generate_samples(args.num_samples,evol.svalues,random_state)
+            """
+
+            # Generate samples from the prior.
+            samples = prior.generate_samples(samples_per_cycle,evol.svalues,random_state)
 
             # Convert each sample into a corresponding tabulated DH(z).
             DH = model.get_DH(samples)
+
+            # Free the large sample array before allocating a large array for DC.
             del samples
 
             # Calculate the corresponding comoving distance functions DC(z).
@@ -157,9 +175,11 @@ def main():
                 combined_DA_hist = DA_hist
             else:
                 combined_DH_hist += DH_hist
-                combined_DA_hist += DA_hist            
+                combined_DA_hist += DA_hist
+            """
 
-            print 'Finished cycle %d of %d' % (cycle+1,args.num_cycles)
+            print 'Finished cycle with %5.2f%% samples remaining.' % (
+                100.*samples_remaining/args.num_samples)
 
         # Save the combined results for these hyperparameters.
         if args.output:
