@@ -129,10 +129,9 @@ def main():
             samples_per_cycle = min(samples_per_cycle,samples_remaining)
             samples_remaining -= samples_per_cycle
 
-            """
-
             # Generate samples from the prior.
             samples = prior.generate_samples(samples_per_cycle,evol.svalues,random_state)
+            print samples.nbytes
 
             # Convert each sample into a corresponding tabulated DH(z).
             DH = model.get_DH(samples)
@@ -146,6 +145,7 @@ def main():
             # Calculate the corresponding comoving angular scale functions DA(z).
             DA = gphist.distance.convert_DC_to_DA(DH,DC,args.omega_k)
 
+            """
             # Calculate -logL for each combination of posterior and prior sample.
             posteriors_nll = gphist.analysis.calculate_posteriors_nll(DH,DA,posteriors)
 

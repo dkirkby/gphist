@@ -10,8 +10,8 @@ def convert_DC_to_DA(DH,DC,omega_k):
 		DH(ndarray): input array with shape (nh,nz) of nh comoving distance
 			functions DC(z) each tabulated at nz redshifts. Only the slice
 			DH[:,0] corresponding to z=0 is actually used.
-		DC(ndarray): input array with shape (nh,nz-1) of nh comoving distance
-			functions DC(z) each tabulated at nz-1 redshifts (omitting z=0).
+		DC(ndarray): input array with shape (nh,nz) of nh comoving distance
+			functions DC(z) each tabulated at nz redshifts starting with z=0.
 			The input values are overwritten with DA values.
 		omega_k(float): curvature parameter Omega_k.
 
@@ -21,10 +21,10 @@ def convert_DC_to_DA(DH,DC,omega_k):
 	"""
 	if omega_k < 0:
 		w = DH[:,0]/np.sqrt(-omega_k)
-		DC = w*np.sin(DC/w)
+		DC[:] = w*np.sin(DC/w)
 	elif omega_k > 0:
 		w = DH[:,0]/np.sqrt(+omega_k)
-		DC = w*np.sinh(w*DC)
+		DC[:] = w*np.sinh(DC*w)
 	return DC
 
 class HubbleDistanceModel(object):
