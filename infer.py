@@ -15,10 +15,10 @@ def main():
         help = 'random seed to use for sampling the prior')
     parser.add_argument('--num-samples', type = int, default = 1000000,
         help = 'number of samples to generate')
-    parser.add_argument('--num-sample-steps', type = int, default = 50,
-        help = 'number of evolution variable steps to use for sampling the prior')
-    parser.add_argument('--num-cycles', type = int, default = 1,
-        help = 'number of generation cycles to perform')
+    parser.add_argument('--num-evol-hist', type = int, default = 50,
+        help = 'number of evolution variable steps to use for histogramming')
+    parser.add_argument('--max-array-size', type = float, default = 1.0,
+        help = 'maximum array memory allocation size in gigabytes')
     parser.add_argument('--hyper-h', type = float, default = 0.1,
         help = 'vertical scale hyperparameter value to use')
     parser.add_argument('--hyper-sigma', type = float, default = 0.05,
@@ -62,28 +62,27 @@ def main():
     zLya = 2.3
     z_extra = [zLRG, zLya]
 
-    # Initialize the evolution variable.
-    evol = gphist.evolution.LogScale(args.num_sample_steps,args.zstar,z_extra)
-
-    # Initialize the distance model.
-    model = gphist.distance.HubbleDistanceModel(evol)
-
     # Initialize the posteriors to use.
     posteriors = [
         # Local H0 measurement from Reis 2013.
         gphist.posterior.LocalH0Posterior('H0'),
         # BOSS LRG BAO from Anderson 2014.
-        gphist.posterior.BAOPosterior('LRG',evol.zvalues,zLRG,
-            20.74,0.69,14.95,0.21,-0.52,args.rsdrag),
+        gphist.posterior.BAOPosterior('LRG',zLRG,20.74,0.69,14.95,0.21,-0.52,args.rsdrag),
         # BOSS Lya-Lya & QSO-Lya from Delubac 2014.
-        gphist.posterior.BAOPosterior('Lya',evol.zvalues,zLya,
-            9.15,1.22,36.46,0.20,-0.38,args.rsdrag),
+        gphist.posterior.BAOPosterior('Lya',zLya,9.15,1.22,36.46,0.20,-0.38,args.rsdrag),
         # Extended CMB case from Shahab Nov-4 email.
-        gphist.posterior.CMBPosterior('CMB',evol,0.1871433E+00,0.1238882E+02,
+        gphist.posterior.CMBPosterior('CMB',args.zstar,0.1871433E+00,0.1238882E+02,
             6.57448e-05,0.00461449,0.338313)
     ]
     posterior_names = np.array([p.name for p in posteriors])
+
     return -1
+
+    # Initialize the evolution variable.
+    evol = gphist.evolution.LogScale(args.num_sample_steps,args.zstar,z_extra)
+
+    # Initialize the distance model.
+    model = gphist.distance.HubbleDistanceModel(evol)
 
     # Initialize a grid of hyperparameters, if requested.
     if args.hyper_index is not None:
@@ -104,9 +103,6 @@ def main():
             h,sigma = args.hyper_h,args.hyper_sigma
 
         print 'Using hyperparameters (h,sigma) = (%f,%f)' % (h,sigma)
-        if args.num_sample_steps < 2/sigma:
-            print 'WARNING: need at least %d sample steps for sigma = %f' % (
-                int(2/sigma),sigma)
 
         # Initialize the Gaussian process prior.
         prior = gphist.process.SquaredExponentialGaussianProcess(h,sigma)
@@ -123,6 +119,7 @@ def main():
 
             # Convert each sample into a corresponding tabulated DH(z).
             DH = model.get_DH(samples)
+            del samples
 
             # Calculate the corresponding comoving distance functions DC(z).
             DC = evol.get_DC(DH)
@@ -134,6 +131,8 @@ def main():
             posteriors_nll = gphist.analysis.calculate_posteriors_nll(DH,DA,posteriors)
 
             # Select some random realizations for each combination of posteriors.
+            # Note that when sigma < 1/num_sample_steps, the realizations cannot be
+            # reconstructed by interpolation.
             # For now, we just sample the first cycle but it might be better to sample
             # all cycles and then downsample.
             if cycle == 0:

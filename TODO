@@ -15,3 +15,4 @@ TODO:
 - Implement Omega_de(z) plots.
 - When h is large and sigma is small, the DA prior is no longer compatible with DA0.
   How should this be handled?
+- Use an external config file (json?) to set posteriors, including redshifts.

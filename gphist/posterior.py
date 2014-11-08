@@ -2,6 +2,7 @@
 """
 
 import math
+from abc import ABCMeta,abstractmethod
 
 import numpy as np
 import numpy.linalg
@@ -79,7 +80,57 @@ class GaussianPdf2D(GaussianPdf):
 		covariance = np.array([[sigma1**2,cov12],[cov12,sigma2**2]])
 		GaussianPdf.__init__(self,mean,covariance)
 
-class LocalH0Posterior(GaussianPdf1D):
+class Posterior(object):
+	"""Posterior constraint on DH,DA at a fixed redshift.
+
+	This is an abstract base class and subclasses must implement the constraint method.
+
+	Args:
+		name(str): Name to associate with this posterior.
+		zpost(float): Redshift of posterior constraint.
+	"""
+	__metaclass__ = ABCMeta
+	def __init__(self,name,zpost):
+		self.name = name
+		self.zpost = zpost
+
+	@abstractmethod
+	def constraint(self,DHz,DAz):
+		"""Evaluate the posterior constraint given values of DH(zpost) and DA(zpost).
+
+		Args:
+			DHz(ndarray): Array of DH(zpost) values.
+			DAz(ndarray): Array of DA(zpost) values with the same shape as DHz.
+
+		Returns:
+			nll(ndarray): Array of -logL values with the same shape as DHz and DAz.
+		"""
+		pass
+
+	def get_nll(self,zprior,DH,DA):
+		"""Calculate -logL for the posterior applied to a set of expansion histories.
+
+		The posterior is applied to c/H(z=0).
+
+			zprior(ndarray): Redshifts where prior is sampled, in increasing order.
+			DH(ndarray): Array of shape (nsamples,nz) of DH(z) values to use.
+			DA(ndarray): Array of shape (nsamples,nz-1) of DA(z) values to use.
+
+		Returns:
+			ndarray: Array of -logL values calculated at each input value.
+
+		Raises:
+			AssertionError: zpost is not in zprior.
+		"""
+		iprior = np.argmax(zprior==self.zpost)
+		assert zprior[iprior] == self.zpost,'zpost is not in zprior'
+		DHz = DH[:,iprior]
+		DAz = DA[:,iprior-1] if iprior > 0 else None
+		assert id(DH)==id(DHz.base)
+		assert id(DA)==id(DAz.base)
+		return self.constraint(DHz,DAz)
+
+class LocalH0Posterior(Posterior):
 	"""Posterior constraint on the value of H0 determined from local measurements.
 
 	Value of H0 = 74.8 +/- 3.1 is taken from Reiss 2011.
@@ -88,152 +139,111 @@ class LocalH0Posterior(GaussianPdf1D):
 		name(str): Name to associate with this posterior.
 	"""
 	def __init__(self,name):
-		self.name = name
-		GaussianPdf1D.__init__(self,74.8,3.1)
+		self.pdf = GaussianPdf1D(74.8,3.1)
+		Posterior.__init__(self,name,0.)
 
-	def get_nll(self,DH,DA):
+	def constraint(DHz,DAz):
 		"""Calculate -logL for the posterior applied to a set of expansion histories.
 
 		The posterior is applied to c/H(z=0).
-		"""
-		# Constant is speed of light in km/s. Indexing below is to get shape (n,1) for values.
-		values = 299792.458/DH[:,:1]
-		return GaussianPdf1D.get_nll(self,values)
 
-class DHPosterior(GaussianPdf1D):
+			DHz(ndarray): Array of DH(z=0) values to use.
+			DAz(ndarray): Array of DA(z=0) values to use (will be ignored).
+
+		Returns:
+			ndarray: Array of -logL values calculated at each input value.
+		"""
+		return self.pdf.get_nll(299792.458/DHz)
+
+class DHPosterior(Posterior):
 	"""Posterior constraint on DH(z).
 
 	Args:
 		name(str): Name to associate with this posterior.
-		evol: Evolution variable to use for interpolating in redshift.
-		z(float): Redshift of posterior constraint.
+		zpost(float): Redshift of posterior constraint.
 		DH(float): Central value of DH(z).
 		DH_error(float): RMS error on DH(z).
 	"""
-	def __init__(self,name,evol,z,DH,DH_error):
-		self.name = name
-		self.s = evol.s_of_z(z)
-		self.evol = evol
-		GaussianPdf1D.__init__(self,DH,DH_error)
+	def __init__(self,name,zpost,DH,DH_error):
+		self.pdf = GaussianPdf1D(DH,DH_error)
+		Posterior.__init__(self,name,zpost)
 
-	def get_nll(self,DH,DA):
+	def constraint(self,DHz,DAz):
 		"""Calculate -logL for the posterior applied to a set of expansion histories.
 
 		Args:
-			DH(ndarray): Array of shape (nsamples,nz) of DH(z) values to use.
-			DA(ndarray): Array of shape (nsamples,nz-1) of DA(z) values to use.
+			DHz(ndarray): Array of DH(zpost) values to use.
+			DAz(ndarray): Array of DA(zpost) values to use (will be ignored).
 
 		Returns:
 			ndarray: Array of -logL values calculated at each input value.
 		"""
-		DH_interpolator = scipy.interpolate.interp1d(self.evol.svalues,DH)
-		values = DH_interpolator(self.s)
-		return GaussianPdf1D.get_nll(self,values[:,np.newaxis])
+		return self.pdf(DHz)
 
-class DAPosterior(GaussianPdf1D):
+class DAPosterior(Posterior):
 	"""Posterior constraint on DA(z).
 
 	Args:
 		name(str): Name to associate with this posterior.
-		evol: Evolution variable to use for interpolating in redshift.
-		z(float): Redshift of posterior constraint.
+		zpost(float): Redshift of posterior constraint.
 		DA(float): Central value of DA(z).
 		DA_error(float): RMS error on DA(z).
 	"""
-	def __init__(self,name,evol,z,DA,DA_error):
-		self.name = name
-		self.s = evol.s_of_z(z)
-		self.evol = evol
-		GaussianPdf1D.__init__(self,DA,DA_error)
+	def __init__(self,name,zpost,DA,DA_error):
+		self.pdf = GaussianPdf1D(DA,DA_error)
+		Posterior.__init__(self,name,zpost)
 
-	def get_nll(self,DH,DA):
+	def constraint(self,DHz,DAz):
 		"""Calculate -logL for the posterior applied to a set of expansion histories.
 
 		Args:
-			DH(ndarray): Array of shape (nsamples,nz) of DH(z) values to use.
-			DA(ndarray): Array of shape (nsamples,nz-1) of DA(z) values to use.
+			DHz(ndarray): Array of DH(zpost) values to use (will be ignored).
+			DAz(ndarray): Array of DA(zpost) values to use.
 
 		Returns:
 			ndarray: Array of -logL values calculated at each input value.
 		"""
-		DA_interpolator = scipy.interpolate.interp1d(self.evol.svalues[1:],DA)
-		values = DA_interpolator(self.s)
-		return GaussianPdf1D.get_nll(self,values[:,np.newaxis])
+		return self.pdf(DAz)
 
-class CMBThetaStarPosterior(GaussianPdf1D):
-	"""Posterior constraint on the angular scale of CMB temperature fluctuations.
-
-	Value of theta* = (1.04148 +/- 0.00066) x 10^2 taken from Ade 2013.
+class CMBPosterior(Posterior):
+	"""Posterior constraint on DH(zref) and DA(zref) from CMB with zpost ~ z*.
 
 	Args:
 		name(str): Name to associate with this posterior.
-	"""
-	def __init__(self,name):
-		self.name = name
-		GaussianPdf1D.__init__(self,1.04148e-2,0.00066e-2)
-
-	def get_nll(self,DH,DA):
-		"""Calculate -logL for the posterior applied to a set of expansion histories.
-
-		The posterior is applied to rs(z*)/DA(z*) assuming that z* is the last redshift
-		tabulated in DH and DC and using rs(z*) = 144.58 Mpc.
-
-		Args:
-			DH(ndarray): Array of shape (nsamples,nz) of DH(z) values to use.
-			DA(ndarray): Array of shape (nsamples,nz-1) of DA(z) values to use.
-
-		Returns:
-			ndarray: Array of -logL values calculated at each input value.
-		"""
-		# Constant is rs(z*). Indexing below is to get shape (n,1) for values.
-		values = 144.58/DA[:,-1:]
-		return GaussianPdf1D.get_nll(self,values)
-
-class CMBPosterior(GaussianPdf):
-	"""Posterior constraint on DH(zref) and DA(zref) from CMB with zref ~ z*.
-
-	Args:
-		name(str): Name to associate with this posterior.
-		evol: Evolution variable to use for interpolating in redshift. The
-			constraints will be applied at the redshift evol.zvalues[-1].
+		zpost(float): Redshift where posterior should be evaluated.
 		DH(float): Value of DH(zref) at zref=evol.zvalues[-1].
 		DA1pz(float): Value of DA(zref)/(1+zref) at zref=evol.zvalues[-1].
 		cov11(float): Variance of DH(zref).
 		cov12(float): Covariance of DH(zref) and DA(zref)/(1+zref).
 		cov22(float): Variance of DA(zref)/(1+zref).
 	"""
-	def __init__(self,name,evol,DH,DA1pz,cov11,cov12,cov22):
-		self.name = name
-		zref = evol.zvalues[-1]
-		mean = np.array([DH,DA1pz*(1+zref)])
-		cov12 *= (1+zref)
-		cov22 *= (1+zref)**2
+	def __init__(self,name,zpost,DH,DA1pz,cov11,cov12,cov22):
+		mean = np.array([DH,DA1pz*(1+zpost)])
+		cov12 *= (1+zpost)
+		cov22 *= (1+zpost)**2
 		covariance = np.array([[cov11,cov12],[cov12,cov22]])
-		GaussianPdf.__init__(self,mean,covariance)
+		self.pdf = GaussianPdf(mean,covariance)
+		Posterior.__init__(self,name,zpost)
 
-	def get_nll(self,DH,DA):
+	def constraint(self,DHz,DAz):
 		"""Calculate -logL for the posterior applied to a set of expansion histories.
 
 		Args:
-			DH(ndarray): Array of shape (nsamples,nz) of DH(z) values to use.
-			DA(ndarray): Array of shape (nsamples,nz-1) of DA(z) values to use.
+			DHz(ndarray): Array of DH(zpost) values to use.
+			DAz(ndarray): Array of DA(zpost) values to use.
 
 		Returns:
 			ndarray: Array of -logL values calculated at each input value.
 		"""
-		values = np.vstack([DH[:,-1],DA[:,-1]])
-		return GaussianPdf.get_nll(self,values.T)
+		values = np.vstack([DHz,DAz])
+		return self.pdf.get_nll(self,values.T)
 
-class BAOPosterior(GaussianPdf2D):
+class BAOPosterior(Posterior):
 	"""Posterior constraint on the parallel and perpendicular scale factors from BAO.
-
-	Value of rs(zdrag) = 147.36 Mpc is fixed.
 
 	Args:
 		name(str): Name to associate with this posterior.
-		zprior(ndarray): Redshifts where prior is sampled, in increasing order.
-		z(double): Redshift where posterior should be evaluated, which must be
-			an element of zprior.
+		zpost(double): Redshift where posterior should be evaluated.
 		apar(double): Line-of-sight (parallel) scale factor measured using BAO.
 		sigma_apar(double): RMS error on measured apar.
 		aperp(double): Transverse (perpendicular) scale factor measured using BAO.
@@ -244,24 +254,22 @@ class BAOPosterior(GaussianPdf2D):
 	Raises:
 		AssertionError: The redshift z is not an element of zprior.
 	"""
-	def __init__(self,name,zprior,z,apar,sigma_apar,aperp,sigma_aperp,rho,rsdrag):
-		self.name = name
-		self.iprior = np.argmax(zprior==z)
-		assert zprior[self.iprior] == z,'z not in zprior'
+	def __init__(self,name,zpost,apar,sigma_apar,aperp,sigma_aperp,rho,rsdrag):
 		self.rsdrag = rsdrag
-		GaussianPdf2D.__init__(self,apar,sigma_apar,aperp,sigma_aperp,rho)
+		self.pdf = GaussianPdf2D(apar,sigma_apar,aperp,sigma_aperp,rho)
+		Posterior.__init__(self,name,zpost)
 
-	def get_nll(self,DH,DA):
+	def constraint(self,DHz,DAz):
 		"""Calculate -logL for the posterior applied to a set of expansion histories.
 
 		The posterior is applied simultaneously to DH(z)/rs(zd) and DA(z)/rs(zd).
 
 		Args:
-			DH(ndarray): Array of shape (nsamples,nz) of DH(z) values to use.
-			DA(ndarray): Array of shape (nsamples,nz-1) of DA(z) values to use.
+			DHz(ndarray): Array of DH(zpost) values to use.
+			DAz(ndarray): Array of DA(zpost) values to use.
 
 		Returns:
 			ndarray: Array of -logL values calculated at each input value.
 		"""
-		values = np.vstack([DH[:,self.iprior],DA[:,self.iprior-1]])/self.rsdrag
-		return GaussianPdf2D.get_nll(self,values.T)
+		values = np.vstack([DHz,DAz])/self.rsdrag
+		return self.pdf.get_nll(self,values.T)
