@@ -43,6 +43,10 @@ def main():
         help = 'curvature parameter')
     parser.add_argument('--zstar', type = float, default = 1090.48,
         help = 'nominal redshift of last scattering')
+    parser.add_argument('--zLRG', type = float, default = 0.57,
+        help = 'redshift of LRG BAO constraint')
+    parser.add_argument('--zLya', type = float, default = 2.3,
+        help = 'redshift of Lyman-alpha BAO constraint')
     parser.add_argument('--rsdrag', type = float, default = 147.36,
         help = 'nominal sound horizon rs(zdrag) at the drag epoch in Mpc')
     parser.add_argument('--num-bins', type = int, default = 1000,
@@ -57,29 +61,26 @@ def main():
         help = 'name of output file to write (the extension .npz will be added)')
     args = parser.parse_args()
 
-    # Define intermediate redshifts where the prior needs to be sampled.
-    zLRG = 0.57
-    zLya = 2.3
-    z_extra = [zLRG, zLya]
-
     # Initialize the posteriors to use.
     posteriors = [
         # Local H0 measurement from Reis 2013.
         gphist.posterior.LocalH0Posterior('H0',74.8,3.1),
         # BOSS LRG BAO from Anderson 2014.
-        gphist.posterior.BAOPosterior('LRG',zLRG,20.74,0.69,14.95,0.21,-0.52,args.rsdrag),
+        gphist.posterior.BAOPosterior('LRG',args.zLRG,20.74,0.69,14.95,0.21,-0.52,args.rsdrag),
         # BOSS Lya-Lya & QSO-Lya from Delubac 2014.
-        gphist.posterior.BAOPosterior('Lya',zLya,9.15,1.22,36.46,0.20,-0.38,args.rsdrag),
+        gphist.posterior.BAOPosterior('Lya',args.zLya,9.15,1.22,36.46,0.20,-0.38,args.rsdrag),
         # Extended CMB case from Shahab Nov-4 email.
         gphist.posterior.CMBPosterior('CMB',args.zstar,0.1871433E+00,0.1238882E+02,
             6.57448e-05,0.00461449,0.338313)
     ]
     posterior_names = np.array([p.name for p in posteriors])
-
-    return -1
+    zpost = np.array([p.zpost for p in posteriors])
 
     # Initialize the evolution variable.
-    evol = gphist.evolution.LogScale(args.num_sample_steps,args.zstar,z_extra)
+    evol = gphist.evolution.LogScale(args.num_evol_hist,zpost)
+
+    print evol.zvalues
+    return -1
 
     # Initialize the distance model.
     model = gphist.distance.HubbleDistanceModel(evol)

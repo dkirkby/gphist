@@ -1,6 +1,5 @@
 TODO:
 
-- Update DHPosterior,DAPosterior to use indexing instead of interpolation in z, like BAOPosterior.
 - Do not use "NLL" terminology for "posterior probability" to avoid confusion.
 - Add curves for DH0,DA0.
 - Option to write json file to configure web display of plots
@@ -9,8 +8,6 @@ TODO:
 - Implement an alternate GP kernel.
 - Test that an expansion history different from DH0 can be recovered w/o bias.
 - Check memory usage and avoid copies of large DH,DA arrays.
-- Implement option to generate multiple cycles of num-samples.
-- Implement marginalization over hyper parameters with log priors.
 - Implement Omega_de(z) plots.
 - When h is large and sigma is small, the DA prior is no longer compatible with DA0.
   How should this be handled?
