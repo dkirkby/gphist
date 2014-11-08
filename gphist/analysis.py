@@ -99,12 +99,13 @@ def calculate_distance_histograms(DH,DH0,DA,DA0,nlp,num_bins,min_value,max_value
 	"""Build histograms of DH/DH0 and DA/DA0.
 
 	Calculate histograms for all permutations of posterior weightings.
+	The undefined ratio DA(z=0)/DA0(z=0) is never evaluated.
 
 	Args:
 		DH(ndarray): Array of shape (nz,nsamples) of DH(z) values to use.
 		DH0(ndarray): Array of shape (nz,) used to normalize each DH(z).
-		DA(ndarray): Array of shape (nz-1,nsamples) of DA(z) values to use.
-		DA0(ndarray): Array of shape (nz-1,) used to normalize each DA(z).
+		DA(ndarray): Array of shape (nz,nsamples) of DA(z) values to use.
+		DA0(ndarray): Array of shape (nz,) used to normalize each DA(z).
 		nlp(ndarray): Array of shape (npost,nsamples) containing the nlp
 			posterior weights to use.
 		num_bins(int): Number of equally spaced bins to use for each histogram.
@@ -115,9 +116,11 @@ def calculate_distance_histograms(DH,DH0,DA,DA0,nlp,num_bins,min_value,max_value
 	Returns:
 		tuple: Arrays of histograms for DH/DH0 and DA/DA0 with shapes
 			(nperm,nz,num_bins+2) and (nperm,nz-1,num_bins+2), respectively,
-			where nperm = 2**npost. The mapping between permutations and the
-			permutation index is given by the binary representation of the index.
-			For example, iperm = 5 = 2^0 + 2^2 combines posteriors 0 and 2.
+			where nperm = 2**npost. There are no DA/DA0 histograms for z=0,
+			hence the nz vs nz-1 dimensions. The mapping between permutations
+			and the permutation index is given by the binary
+			representation of the index. For example, iperm = 5 = 2^0 + 2^2
+			combines posteriors 0 and 2.
 
 	Raises:
 		AssertionError: Unexpected sizes of DH0,DA0,DA,nlp.
@@ -126,12 +129,12 @@ def calculate_distance_histograms(DH,DH0,DA,DA0,nlp,num_bins,min_value,max_value
 	nz,nsamples = DH.shape
 	# Check sizes.
 	assert DH0.shape == (nz,),'Unexpected DH0.shape'
-	assert DA0.shape == (nz-1,),'Unexpected DA0.shape'
-	assert DA.shape == (nz-1,nsamples),'Unexpected DA.shape'
+	assert DA0.shape == (nz,),'Unexpected DA0.shape'
+	assert DA.shape == (nz,nsamples),'Unexpected DA.shape'
 	assert nlp.shape == (npost,nsamples),'Unexpected nlp.shape'
 	# Rescale DH,DA by DH0,DA0.
 	DH_ratio = DH/DH0[:,np.newaxis]
-	DA_ratio = DA/DA0[:,np.newaxis]
+	DA_ratio = DA[1:]/DA0[1:,np.newaxis]
 	# Initialize posterior permutations.
 	nperm = 2**npost
 	perms = get_permutations(npost)

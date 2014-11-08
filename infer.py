@@ -17,7 +17,7 @@ def main():
     parser.add_argument('--num-samples', type = int, default = 1000000,
         help = 'number of samples to generate')
     parser.add_argument('--num-evol-hist', type = int, default = 50,
-        help = 'number of evolution variable steps to use for histogramming')
+        help = 'number of equally spaced evolution variable steps to use for histogramming')
     parser.add_argument('--max-array-size', type = float, default = 1.0,
         help = 'maximum array memory allocation size in gigabytes')
     parser.add_argument('--hyper-h', type = float, default = 0.1,
@@ -166,7 +166,6 @@ def main():
             # Transpose so that values to histogram are consecutive.
             DH_ds,DA_ds = DH[:,i_ds].T,DA[:,i_ds].T
 
-            """
             # Build histograms of DH/DH0 and DA/DA0 for each redshift slice and
             # all permutations of posteriors.
             DH_hist,DA_hist = gphist.analysis.calculate_distance_histograms(
@@ -180,7 +179,6 @@ def main():
             else:
                 combined_DH_hist += DH_hist
                 combined_DA_hist += DA_hist
-            """
 
             print 'Finished cycle with %5.2f%% samples remaining.' % (
                 100.*samples_remaining/args.num_samples)
