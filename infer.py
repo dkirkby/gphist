@@ -146,7 +146,7 @@ def main():
             DA = gphist.distance.convert_DC_to_DA(DH,DC,args.omega_k)
 
             # Calculate -logL for each combination of posterior and prior sample.
-            posteriors_nll = gphist.analysis.calculate_posteriors_nll(
+            posteriors_nlp = gphist.analysis.calculate_posteriors_nlp(
                 evol.zvalues,DH,DA,posteriors)
 
             """
@@ -157,7 +157,7 @@ def main():
             # all cycles and then downsample.
             if cycle == 0:
                 DH_realizations,DA_realizations = gphist.analysis.select_random_realizations(
-                    DH,DA,posteriors_nll,args.num_save)
+                    DH,DA,posteriors_nlp,args.num_save)
 
             # Downsample for histogramming. Note that we use DC0 for DA0, i.e., assuming
             # zero curvature for the baseline.
@@ -167,7 +167,7 @@ def main():
             # Build histograms of DH/DH0 and DA/DA0 for each redshift slice and
             # all permutations of posteriors.
             DH_hist,DA_hist = gphist.analysis.calculate_distance_histograms(
-                DH_ds,DH0_ds,DA_ds,DA0_ds,posteriors_nll,
+                DH_ds,DH0_ds,DA_ds,DA0_ds,posteriors_nlp,
                 args.num_bins,args.min_ratio,args.max_ratio)
 
             # Combine with the results of any previous cycles.

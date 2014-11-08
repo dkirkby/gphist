@@ -24,8 +24,8 @@ def get_delta_chisq(confidence_levels=(0.6827,0.9543,0.9973),num_dof=2):
     """
     return scipy.stats.chi2.isf(1-np.array(confidence_levels),df=num_dof)
 
-def calculate_posteriors_nll(zprior,DH,DA,posteriors):
-	"""Calculate -logL for each combination of posterior and prior sample.
+def calculate_posteriors_nlp(zprior,DH,DA,posteriors):
+	"""Calculate -log(prob) for each combination of posterior and prior sample.
 
 	Args:
 		zprior(ndarray): Redshifts where prior is sampled, in increasing order.
@@ -35,15 +35,15 @@ def calculate_posteriors_nll(zprior,DH,DA,posteriors):
 			inherit from the posterior.Posterior base class.
 
 	Returns:
-		ndarray: An array of shape (npost,nsamples) containing the nll values
+		ndarray: An array of shape (npost,nsamples) containing the nlp values
 			calculated for each posterior independently.
 	"""
 	nsamples = len(DH)
 	npost = len(posteriors)
-	nll = np.empty((npost,nsamples))
+	nlp = np.empty((npost,nsamples))
 	for ipost,post in enumerate(posteriors):
-		nll[ipost] = post.get_nll(zprior,DH,DA)
-	return nll
+		nlp[ipost] = post.get_nlp(zprior,DH,DA)
+	return nlp
 
 def get_bin_indices(data,num_bins,min_value,max_value):
 	"""Create array of integer bin indices in preparation for histogramming.
@@ -126,7 +126,7 @@ def downsample(num_after,z,DH,DA,DH0,DA0):
 
 	return z[DH_indices],DH.T[DH_indices],DA.T[DA_indices],DH0[DH_indices],DA0[DA_indices]
 
-def calculate_distance_histograms(DH,DH0,DA,DA0,nll,num_bins,min_value,max_value):
+def calculate_distance_histograms(DH,DH0,DA,DA0,nlp,num_bins,min_value,max_value):
 	"""Build histograms of DH/DH0 and DA/DA0.
 
 	Calculate histograms for all permutations of posterior weightings.
@@ -136,7 +136,7 @@ def calculate_distance_histograms(DH,DH0,DA,DA0,nll,num_bins,min_value,max_value
 		DH0(ndarray): Array of shape (nz,) used to normalize each DH(z).
 		DA(ndarray): Array of shape (nz-1,nsamples) of DA(z) values to use.
 		DA0(ndarray): Array of shape (nz-1,) used to normalize each DA(z).
-		nll(ndarray): Array of shape (npost,nsamples) containing the nll
+		nlp(ndarray): Array of shape (npost,nsamples) containing the nlp
 			posterior weights to use.
 		num_bins(int): Number of equally spaced bins to use for each histogram.
 		min_value(float): Values less than this are accumulated in an underflow bin.
@@ -151,15 +151,15 @@ def calculate_distance_histograms(DH,DH0,DA,DA0,nll,num_bins,min_value,max_value
 			For example, iperm = 5 = 2^0 + 2^2 combines posteriors 0 and 2.
 
 	Raises:
-		AssertionError: Unexpected sizes of DH0,DA0,DA,nll.
+		AssertionError: Unexpected sizes of DH0,DA0,DA,nlp.
 	"""
-	npost = len(nll)
+	npost = len(nlp)
 	nz,nsamples = DH.shape
 	# Check sizes.
 	assert DH0.shape == (nz,),'Unexpected DH0.shape'
 	assert DA0.shape == (nz-1,),'Unexpected DA0.shape'
 	assert DA.shape == (nz-1,nsamples),'Unexpected DA.shape'
-	assert nll.shape == (npost,nsamples),'Unexpected nll.shape'
+	assert nlp.shape == (npost,nsamples),'Unexpected nlp.shape'
 	# Rescale DH,DA by DH0,DA0.
 	DH_ratio = DH/DH0[:,np.newaxis]
 	DA_ratio = DA/DA0[:,np.newaxis]
@@ -175,8 +175,8 @@ def calculate_distance_histograms(DH,DH0,DA,DA0,nll,num_bins,min_value,max_value
 	# Loop over permutations.
 	for iperm,perm in enumerate(perms):
 		# Calculate weights for this permutation.
-		perm_nll = np.sum(nll[perm],axis=0)  # Returns zero when perm entries all False.
-		perm_weights = np.exp(-perm_nll)
+		perm_nlp = np.sum(nlp[perm],axis=0)  # Returns zero when perm entries all False.
+		perm_weights = np.exp(-perm_nlp)
 		# Build histograms of DH/DH0 for each redshift slice.
 		for ihist in range(nz):
 			DH_hist[iperm,ihist] = np.bincount(
@@ -186,8 +186,8 @@ def calculate_distance_histograms(DH,DH0,DA,DA0,nll,num_bins,min_value,max_value
 	# Loop over permutations.
 	for iperm,perm in enumerate(perms):
 		# Calculate weights for this permutation.
-		perm_nll = np.sum(nll[perm],axis=0)  # Returns zero when perm entries all False.
-		perm_weights = np.exp(-perm_nll)
+		perm_nlp = np.sum(nlp[perm],axis=0)  # Returns zero when perm entries all False.
+		perm_weights = np.exp(-perm_nlp)
 		# Build histograms of DA/DA0 for each redshift slice.
 		for ihist in range(nz-1):
 			DA_hist[iperm,ihist] = np.bincount(
@@ -265,13 +265,13 @@ def calculate_confidence_limits(histograms,confidence_levels,bin_range):
 		limits[:,ihist] = quantiles(hist,quantile_levels,bin_range)
 	return limits
 
-def select_random_realizations(DH,DA,nll,num_realizations,print_warnings=True):
+def select_random_realizations(DH,DA,nlp,num_realizations,print_warnings=True):
 	"""Select random realizations of generated expansion histories.
 
 	Args:
 		DH(ndarray): Array of shape (nsamples,nz) of DH(z) values to use.
 		DA(ndarray): Array of shape (nsamples,nz-1) of DA(z) values to use.
-		nll(ndarray): Array of shape (npost,nsamples) containing the nll
+		nlp(ndarray): Array of shape (npost,nsamples) containing the nlp
 			posterior weights to use.
 		num_realizations(int): Number of random rows to return.
 		print_warnings(bool): Print a warning for any posterior permutation
@@ -285,13 +285,13 @@ def select_random_realizations(DH,DA,nll,num_realizations,print_warnings=True):
 			more than once. Use the print_warnings argument to flag this.
 
 	Raises:
-		AssertionError: Unexpected sizes of DH,DA, or nll.
+		AssertionError: Unexpected sizes of DH,DA, or nlp.
 	"""
 	nsamples,nz = DH.shape
-	npost = len(nll)
+	npost = len(nlp)
 	# Check sizes.
 	assert DA.shape == (nsamples,nz-1)
-	assert nll.shape == (npost,nsamples)
+	assert nlp.shape == (npost,nsamples)
 	# Allocate result arrays.
 	nperm = 2**npost
 	DH_realizations = np.empty((nperm,num_realizations,nz))
@@ -302,8 +302,8 @@ def select_random_realizations(DH,DA,nll,num_realizations,print_warnings=True):
 	perms = get_permutations(npost)
 	for iperm,perm in enumerate(perms):
 		# Calculate weights for this permutation.
-		perm_nll = np.sum(nll[perm],axis=0)  # Returns zero when perm entries are all False.
-		perm_weights = np.exp(-perm_nll)
+		perm_nlp = np.sum(nlp[perm],axis=0)  # Returns zero when perm entries are all False.
+		perm_weights = np.exp(-perm_nlp)
 		perm_cdf = np.cumsum(perm_weights)
 		perm_cdf /= perm_cdf[-1]
 		perm_rows = np.argmax(perm_cdf > random_levels[:,np.newaxis],axis=1)

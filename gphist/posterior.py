@@ -28,11 +28,11 @@ class GaussianPdf(object):
 
 		self.mean = mean
 		self.icov = np.linalg.inv(covariance)
-		# Calculate the constant offset of -logL due to the normalization factors.
+		# Calculate the constant offset of -log(prob) due to the normalization factors.
 		self.norm = 0.5*len(mean)*np.log(2*math.pi) + 0.5*np.log(np.linalg.det(covariance))
 
-	def get_nll(self,values):
-		"""Calculates -logL for the PDF evaluated at specified values.
+	def get_nlp(self,values):
+		"""Calculates -log(prob) for the PDF evaluated at specified values.
 
 		The calculation is automatically broadcast over multiple value vectors.
 
@@ -42,7 +42,7 @@ class GaussianPdf(object):
 				neval is the number of points where the PDF should be evaluated.
 
 		Returns:
-			float: Array of length neval -logL values calculated at each input point.
+			float: Array of length neval -log(prob) values calculated at each input point.
 
 		Raises:
 			ValueError: Values can not be broadcast together with our mean vector.
@@ -64,17 +64,17 @@ class GaussianPdf1D(GaussianPdf):
 		covariance = np.array([[sigma**2]])
 		GaussianPdf.__init__(self,mean,covariance)
 
-	def get_nll(self,values):
-		"""Calculates -logL for the PDF evaluated at specified values.
+	def get_nlp(self,values):
+		"""Calculates -log(prob) for the PDF evaluated at specified values.
 
 		Args:
 			values(ndarray): Array of values where the PDF should be evaluated with
 				length neval.
 
 		Returns:
-			float: Array of length neval -logL values calculated at each input point.
+			float: Array of length neval -log(prob) values calculated at each input point.
 		"""
-		return GaussianPdf.get_nll(self,values[:,np.newaxis])
+		return GaussianPdf.get_nlp(self,values[:,np.newaxis])
 
 class GaussianPdf2D(GaussianPdf):
 	"""Represents a specialization of GaussianPdf to the 2D case.
@@ -116,12 +116,12 @@ class Posterior(object):
 			DAz(ndarray): Array of DA(zpost) values with the same shape as DHz.
 
 		Returns:
-			nll(ndarray): Array of -logL values with the same shape as DHz and DAz.
+			nlp(ndarray): Array of -log(prob) values with the same shape as DHz and DAz.
 		"""
 		pass
 
-	def get_nll(self,zprior,DH,DA):
-		"""Calculate -logL for the posterior applied to a set of expansion histories.
+	def get_nlp(self,zprior,DH,DA):
+		"""Calculate -log(prob) for the posterior applied to a set of expansion histories.
 
 		The posterior is applied to c/H(z=0).
 
@@ -130,7 +130,7 @@ class Posterior(object):
 			DA(ndarray): Array of shape (nsamples,nz) of DA(z) values to use.
 
 		Returns:
-			ndarray: Array of -logL values calculated at each input value.
+			ndarray: Array of -log(prob) values calculated at each input value.
 
 		Raises:
 			AssertionError: zpost is not in zprior.
@@ -156,7 +156,7 @@ class LocalH0Posterior(Posterior):
 		Posterior.__init__(self,name,0.)
 
 	def constraint(self,DHz,DAz):
-		"""Calculate -logL for the posterior applied to a set of expansion histories.
+		"""Calculate -log(prob) for the posterior applied to a set of expansion histories.
 
 		The posterior is applied to c/H(z=0).
 
@@ -164,9 +164,9 @@ class LocalH0Posterior(Posterior):
 			DAz(ndarray): Array of DA(z=0) values to use (will be ignored).
 
 		Returns:
-			ndarray: Array of -logL values calculated at each input value.
+			ndarray: Array of -log(prob) values calculated at each input value.
 		"""
-		return self.pdf.get_nll(299792.458/DHz)
+		return self.pdf.get_nlp(299792.458/DHz)
 
 class DHPosterior(Posterior):
 	"""Posterior constraint on DH(z).
@@ -182,14 +182,14 @@ class DHPosterior(Posterior):
 		Posterior.__init__(self,name,zpost)
 
 	def constraint(self,DHz,DAz):
-		"""Calculate -logL for the posterior applied to a set of expansion histories.
+		"""Calculate -log(prob) for the posterior applied to a set of expansion histories.
 
 		Args:
 			DHz(ndarray): Array of DH(zpost) values to use.
 			DAz(ndarray): Array of DA(zpost) values to use (will be ignored).
 
 		Returns:
-			ndarray: Array of -logL values calculated at each input value.
+			ndarray: Array of -log(prob) values calculated at each input value.
 		"""
 		return self.pdf(DHz)
 
@@ -207,14 +207,14 @@ class DAPosterior(Posterior):
 		Posterior.__init__(self,name,zpost)
 
 	def constraint(self,DHz,DAz):
-		"""Calculate -logL for the posterior applied to a set of expansion histories.
+		"""Calculate -log(prob) for the posterior applied to a set of expansion histories.
 
 		Args:
 			DHz(ndarray): Array of DH(zpost) values to use (will be ignored).
 			DAz(ndarray): Array of DA(zpost) values to use.
 
 		Returns:
-			ndarray: Array of -logL values calculated at each input value.
+			ndarray: Array of -log(prob) values calculated at each input value.
 		"""
 		return self.pdf(DAz)
 
@@ -239,17 +239,17 @@ class CMBPosterior(Posterior):
 		Posterior.__init__(self,name,zpost)
 
 	def constraint(self,DHz,DAz):
-		"""Calculate -logL for the posterior applied to a set of expansion histories.
+		"""Calculate -log(prob) for the posterior applied to a set of expansion histories.
 
 		Args:
 			DHz(ndarray): Array of DH(zpost) values to use.
 			DAz(ndarray): Array of DA(zpost) values to use.
 
 		Returns:
-			ndarray: Array of -logL values calculated at each input value.
+			ndarray: Array of -log(prob) values calculated at each input value.
 		"""
 		values = np.vstack([DHz,DAz])
-		return self.pdf.get_nll(values.T)
+		return self.pdf.get_nlp(values.T)
 
 class BAOPosterior(Posterior):
 	"""Posterior constraint on the parallel and perpendicular scale factors from BAO.
@@ -273,7 +273,7 @@ class BAOPosterior(Posterior):
 		Posterior.__init__(self,name,zpost)
 
 	def constraint(self,DHz,DAz):
-		"""Calculate -logL for the posterior applied to a set of expansion histories.
+		"""Calculate -log(prob) for the posterior applied to a set of expansion histories.
 
 		The posterior is applied simultaneously to DH(z)/rs(zd) and DA(z)/rs(zd).
 
@@ -282,7 +282,7 @@ class BAOPosterior(Posterior):
 			DAz(ndarray): Array of DA(zpost) values to use.
 
 		Returns:
-			ndarray: Array of -logL values calculated at each input value.
+			ndarray: Array of -log(prob) values calculated at each input value.
 		"""
 		values = np.vstack([DHz,DAz])/self.rsdrag
-		return self.pdf.get_nll(values.T)
+		return self.pdf.get_nlp(values.T)
