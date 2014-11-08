@@ -133,13 +133,13 @@ class Posterior(object):
 class LocalH0Posterior(Posterior):
 	"""Posterior constraint on the value of H0 determined from local measurements.
 
-	Value of H0 = 74.8 +/- 3.1 is taken from Reiss 2011.
-
 	Args:
 		name(str): Name to associate with this posterior.
+		H0(float): Central value of H(z=0).
+		H0_error(float): RMS error on H(z=0).
 	"""
-	def __init__(self,name):
-		self.pdf = GaussianPdf1D(74.8,3.1)
+	def __init__(self,name,H0,H0_error):
+		self.pdf = GaussianPdf1D(H0,H0_error)
 		Posterior.__init__(self,name,0.)
 
 	def constraint(DHz,DAz):

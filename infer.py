@@ -65,7 +65,7 @@ def main():
     # Initialize the posteriors to use.
     posteriors = [
         # Local H0 measurement from Reis 2013.
-        gphist.posterior.LocalH0Posterior('H0'),
+        gphist.posterior.LocalH0Posterior('H0',74.8,3.1),
         # BOSS LRG BAO from Anderson 2014.
         gphist.posterior.BAOPosterior('LRG',zLRG,20.74,0.69,14.95,0.21,-0.52,args.rsdrag),
         # BOSS Lya-Lya & QSO-Lya from Delubac 2014.

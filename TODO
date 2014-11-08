@@ -1,6 +1,5 @@
 TODO:
 
-- Make H0,dH0 values parameters of H0Posterior ctor.
 - Update DHPosterior,DAPosterior to use indexing instead of interpolation in z, like BAOPosterior.
 - Do not use "NLL" terminology for "posterior probability" to avoid confusion.
 - Add curves for DH0,DA0.
