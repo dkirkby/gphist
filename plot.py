@@ -149,7 +149,7 @@ def main():
         if args.nlp:
             fig = plt.figure('NLP-'+name,figsize=(10,10))
             fig.set_facecolor('white')
-            plt.xscale('linear')
+            plt.xscale('log')
             plt.yscale('log')
             nlp = hyper_nlp[iperm] - np.min(hyper_nlp[iperm])
             plt.pcolormesh(hyper_grid.sigma_edges,hyper_grid.h_edges,nlp,
