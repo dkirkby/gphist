@@ -242,7 +242,7 @@ def select_random_realizations(DH,DA,nlp,num_realizations,print_warnings=True):
 
 	Args:
 		DH(ndarray): Array of shape (nsamples,nz) of DH(z) values to use.
-		DA(ndarray): Array of shape (nsamples,nz-1) of DA(z) values to use.
+		DA(ndarray): Array of shape (nsamples,nz) of DA(z) values to use.
 		nlp(ndarray): Array of shape (npost,nsamples) containing the nlp
 			posterior weights to use.
 		num_realizations(int): Number of random rows to return.
@@ -250,11 +250,11 @@ def select_random_realizations(DH,DA,nlp,num_realizations,print_warnings=True):
 			whose selected realizations include repeats.
 
 	Returns:
-		tuple: Arrays of random realizations of DH and DA, with shapes
-			(nperm,num_realizations,nz) and (nperm,num_realizations,nz-1),
-			respectively, where nperm = 2**npost is the total number of
-			posterior permutations. Note that a realization might be selected
-			more than once. Use the print_warnings argument to flag this.
+		tuple: Arrays of random realizations of DH and DA, with shape
+			(nperm,num_realizations,nz) where nperm = 2**npost is the total
+			number of posterior permutations. Note that a realization might
+			be selected more than once. Use the print_warnings argument to
+			flag this.
 
 	Raises:
 		AssertionError: Unexpected sizes of DH,DA, or nlp.
@@ -262,12 +262,12 @@ def select_random_realizations(DH,DA,nlp,num_realizations,print_warnings=True):
 	nsamples,nz = DH.shape
 	npost = len(nlp)
 	# Check sizes.
-	assert DA.shape == (nsamples,nz-1)
+	assert DA.shape == (nsamples,nz)
 	assert nlp.shape == (npost,nsamples)
 	# Allocate result arrays.
 	nperm = 2**npost
 	DH_realizations = np.empty((nperm,num_realizations,nz))
-	DA_realizations = np.empty((nperm,num_realizations,nz-1))
+	DA_realizations = np.empty((nperm,num_realizations,nz))
 	# Generate a random CDF value for each realization.
 	random_levels = np.random.uniform(low=0.,high=1.,size=num_realizations)
 	# Loop over posterior permutations.

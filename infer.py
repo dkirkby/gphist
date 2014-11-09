@@ -131,7 +131,6 @@ def main():
 
             # Generate samples from the prior.
             samples = prior.generate_samples(samples_per_cycle,evol.svalues,random_state)
-            print samples.nbytes
 
             # Convert each sample into a corresponding tabulated DH(z).
             DH = model.get_DH(samples)
@@ -149,16 +148,12 @@ def main():
             posteriors_nlp = gphist.analysis.calculate_posteriors_nlp(
                 evol.zvalues,DH,DA,posteriors)
 
-            """
             # Select some random realizations for each combination of posteriors.
-            # Note that when sigma < 1/num_sample_steps, the realizations cannot be
-            # reconstructed by interpolation.
             # For now, we just sample the first cycle but it might be better to sample
             # all cycles and then downsample.
-            if cycle == 0:
+            if combined_DH_hist is None:
                 DH_realizations,DA_realizations = gphist.analysis.select_random_realizations(
                     DH,DA,posteriors_nlp,args.num_save)
-            """
 
             # Downsample distance functions in preparation for histogramming.
             i_ds = evol.downsampled_indices
@@ -185,7 +180,7 @@ def main():
 
         # Save the combined results for these hyperparameters.
         if args.output:
-            fixed_options = np.array([args.num_samples,args.num_cycles,
+            fixed_options = np.array([args.num_samples,
                 args.hyper_num_h,args.hyper_num_sigma])
             variable_options = np.array([args.seed,hyper_index,hyper_offset])
             bin_range = np.array([args.min_ratio,args.max_ratio])
@@ -194,8 +189,8 @@ def main():
             output_name = '%s.%d.npz' % (args.output,hyper_offset)
             np.savez(output_name,
                 DH_hist=combined_DH_hist,DA_hist=combined_DA_hist,
-                DH0=DH0_ds,DA0=DA0_ds,zhist=z_ds,zevol=evol.zvalues,
-                DH0_full=DH0,DA0_full=DA0,
+                DH0=DH0_ds,DA0=DA0_ds,zvalues=z_ds,
+                DH0_full=DH0,DA0_full=DA0,zvalues_full=evol.zvalues,
                 fixed_options=fixed_options,variable_options=variable_options,
                 bin_range=bin_range,hyper_range=hyper_range,
                 DH_realizations=DH_realizations,DA_realizations=DA_realizations,

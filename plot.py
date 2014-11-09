@@ -75,8 +75,8 @@ def main():
             DA_hist = loaded['DA_hist']
             DH0 = loaded['DH0']
             DA0 = loaded['DA0']
-            zhist = loaded['zhist']
-            zevol = loaded['zevol']
+            zvalues = loaded['zvalues']
+            zvalues_full = loaded['zvalues_full']
             DH0_full = loaded['DH0_full']
             DA0_full = loaded['DA0_full']
             fixed_options = loaded['fixed_options']
@@ -85,27 +85,25 @@ def main():
             hyper_range = loaded['hyper_range']
             if show_examples:
                 DH_realizations = loaded['DH_realizations']
-                DA_realizations = np.empty_like(DH_realizations)
-                DA_realizations[:,:,1:] = loaded['DA_realizations']
-                DA_realizations[:,:,0] = 0.
+                DA_realizations = loaded['DA_realizations']
             posterior_names = loaded['posterior_names']
             # Initialize the posterior permutations.
             npost = len(posterior_names)
             perms = gphist.analysis.get_permutations(npost)
             # Initialize the hyperparameter grid.
-            n_samples,n_cycles,n_h,n_sigma = fixed_options
+            n_samples,n_h,n_sigma = fixed_options
             h_min,h_max,sigma_min,sigma_max = hyper_range
             hyper_grid = gphist.process.HyperParameterLogGrid(
                 n_h,h_min,h_max,n_sigma,sigma_min,sigma_max)
             # Initialize array of marginalized posterior NLL values over hyperparameters.
             hyper_nll = np.zeros((2**npost,n_h,n_sigma))
-            nll_const = -np.log(n_samples*n_cycles)
+            nll_const = -np.log(n_samples)
             nll_levels = gphist.analysis.get_delta_chisq(num_dof=2)
         else:
             assert np.array_equal(DH0,loaded['DH0']),'Found inconsistent DH0'
             assert np.array_equal(DA0,loaded['DA0']),'Found inconsistent DA0'
-            assert np.array_equal(zhist,loaded['zhist']),'Found inconsistent zhist'
-            assert np.array_equal(zevol,loaded['zevol']),'Found inconsistent zevol'
+            assert np.array_equal(zvalues,loaded['zvalues']),'Found inconsistent zvalues'
+            assert np.array_equal(zvalues_full,loaded['zvalues_full']),'Found inconsistent zvalues_full'
             assert np.array_equal(DH0_full,loaded['DH0_full']),'Found inconsistent DH0_full'
             assert np.array_equal(DA0_full,loaded['DA0_full']),'Found inconsistent DA0_full'
             assert np.array_equal(bin_range,loaded['bin_range']),\
@@ -175,11 +173,12 @@ def main():
             # Convert to limits on DH, DA, with DA limits extended to z=0.
             DH_limits = DH_ratio_limits*DH0
             DA_limits = np.empty_like(DH_limits)
-            DA_limits[:,1:] = DA_ratio_limits*DA0
+            DA_limits[:,1:] = DA_ratio_limits*DA0[1:]
             DA_limits[:,0] = 0.
 
-            # Find first z index beyond H(z)/(1+z) plot.
-            iend = 1+np.argmax(zhist > args.zmax)
+            # Find first z index beyond zmax.
+            iend = 1+np.argmax(zvalues > args.zmax)
+            iend_full = 1+np.argmax(zvalues_full > args.zmax)
 
             fig = plt.figure(name,figsize=(12,4*num_plot_rows))
             fig.subplots_adjust(left=0.06,bottom=0.07,right=0.98,
@@ -195,13 +194,13 @@ def main():
             plt.grid(True)
             plt.xlim([1.,1000.])
             plt.ylim([0.5,1.7])
-            plt.fill_between(1+zhist,DH_ratio_limits[0],DH_ratio_limits[-1],
+            plt.fill_between(1+zvalues,DH_ratio_limits[0],DH_ratio_limits[-1],
                 facecolor='blue',alpha=0.25)
-            plt.plot(1+zhist,DH_ratio_limits[0],'b--')
-            plt.plot(1+zhist,DH_ratio_limits[1],'b-')
-            plt.plot(1+zhist,DH_ratio_limits[2],'b--')
+            plt.plot(1+zvalues,DH_ratio_limits[0],'b--')
+            plt.plot(1+zvalues,DH_ratio_limits[1],'b-')
+            plt.plot(1+zvalues,DH_ratio_limits[2],'b--')
             if show_examples:
-                plt.plot(1+zevol,(DH_realizations[iperm]/DH0_full).T,'r',alpha=0.5)
+                plt.plot(1+zvalues_full,(DH_realizations[iperm]/DH0_full).T,'r',alpha=0.5)
             plt.xlabel(r'$1+z$')
             plt.ylabel(r'$D_H(z)/D_H^0(z)$')
 
@@ -210,13 +209,13 @@ def main():
             plt.grid(True)
             plt.xlim([1.,1000.])
             plt.ylim([0.5,1.7])
-            plt.fill_between(1+zhist[1:],DA_ratio_limits[0],DA_ratio_limits[-1],
+            plt.fill_between(1+zvalues[1:],DA_ratio_limits[0],DA_ratio_limits[-1],
                 facecolor='blue',alpha=0.25)
-            plt.plot(1+zhist[1:],DA_ratio_limits[0],'b--')
-            plt.plot(1+zhist[1:],DA_ratio_limits[1],'b-')
-            plt.plot(1+zhist[1:],DA_ratio_limits[2],'b--')
+            plt.plot(1+zvalues[1:],DA_ratio_limits[0],'b--')
+            plt.plot(1+zvalues[1:],DA_ratio_limits[1],'b-')
+            plt.plot(1+zvalues[1:],DA_ratio_limits[2],'b--')
             if show_examples:
-                plt.plot(1+zevol[1:],(DA_realizations[iperm,:,1:]/DA0_full).T,'r',alpha=0.5)
+                plt.plot(1+zvalues_full[1:],(DA_realizations[iperm,:,1:]/DA0_full[1:]).T,'r',alpha=0.5)
             plt.xlabel(r'$1+z$')
             plt.ylabel(r'$D_A(z)/D_A^0(z)$')
 
@@ -229,13 +228,14 @@ def main():
             plt.xscale('linear')
             plt.grid(True)
             plt.xlim([0.,args.zmax])
-            plt.fill_between(zhist[:iend],1e-3*DH_limits[0,:iend],1e-3*DH_limits[-1,:iend],
+            plt.fill_between(zvalues[:iend],1e-3*DH_limits[0,:iend],1e-3*DH_limits[-1,:iend],
                 facecolor='blue',alpha=0.25)
-            plt.plot(zhist[:iend],1e-3*DH_limits[0,:iend],'b--')
-            plt.plot(zhist[:iend],1e-3*DH_limits[1,:iend],'b-')
-            plt.plot(zhist[:iend],1e-3*DH_limits[2,:iend],'b--')
+            plt.plot(zvalues[:iend],1e-3*DH_limits[0,:iend],'b--')
+            plt.plot(zvalues[:iend],1e-3*DH_limits[1,:iend],'b-')
+            plt.plot(zvalues[:iend],1e-3*DH_limits[2,:iend],'b--')
             if show_examples:
-                plt.plot(zhist[:iend],1e-3*DH_realizations[iperm,:,:iend].T,'r',alpha=0.5)
+                plt.plot(zvalues_full[:iend_full],
+                    1e-3*DH_realizations[iperm,:,:iend_full].T,'r',alpha=0.5)
             plt.xlabel(r'$z$')
             plt.ylabel(r'$D_H(z)$ (Gpc)')
 
@@ -243,13 +243,14 @@ def main():
             plt.xscale('linear')
             plt.grid(True)
             plt.xlim([0.,args.zmax])
-            plt.fill_between(zhist[:iend],1e-3*DA_limits[0,:iend],1e-3*DA_limits[-1,:iend],
+            plt.fill_between(zvalues[:iend],1e-3*DA_limits[0,:iend],1e-3*DA_limits[-1,:iend],
                 facecolor='blue',alpha=0.25)
-            plt.plot(zhist[:iend],1e-3*DA_limits[0,:iend],'b--')
-            plt.plot(zhist[:iend],1e-3*DA_limits[1,:iend],'b-')
-            plt.plot(zhist[:iend],1e-3*DA_limits[2,:iend],'b--')
+            plt.plot(zvalues[:iend],1e-3*DA_limits[0,:iend],'b--')
+            plt.plot(zvalues[:iend],1e-3*DA_limits[1,:iend],'b-')
+            plt.plot(zvalues[:iend],1e-3*DA_limits[2,:iend],'b--')
             if show_examples:
-                plt.plot(zevol[:iend],1e-3*DA_realizations[iperm,:,:iend].T,'r',alpha=0.5)
+                plt.plot(zvalues_full[:iend_full],
+                    1e-3*DA_realizations[iperm,:,:iend_full].T,'r',alpha=0.5)
             plt.xlabel(r'$z$')
             plt.ylabel(r'$D_A(z)$ (Gpc)')
 
@@ -259,21 +260,21 @@ def main():
         if args.dark_energy:
 
             # Calculate the corresponding limits and realizations acceleration H(z)/(1+z).
-            accel_limits = clight/DH_limits/(1+zhist)
+            accel_limits = clight/DH_limits/(1+zvalues)
             if show_examples:
-                accel_realizations = clight/DH_realizations[iperm]/(1+zevol)
+                accel_realizations = clight/DH_realizations[iperm]/(1+zvalues_full)
 
             plt.subplot(num_plot_rows,2,2*irow+1)
             plt.xscale('linear')
             plt.grid(True)
             plt.xlim([0.,args.zmax])
-            plt.fill_between(zhist[:iend],accel_limits[0,:iend],accel_limits[-1,:iend],
+            plt.fill_between(zvalues[:iend],accel_limits[0,:iend],accel_limits[-1,:iend],
                 facecolor='blue',alpha=0.25)
-            plt.plot(zhist[:iend],accel_limits[0,:iend],'b--')
-            plt.plot(zhist[:iend],accel_limits[1,:iend],'b-')
-            plt.plot(zhist[:iend],accel_limits[2,:iend],'b--')
+            plt.plot(zvalues[:iend],accel_limits[0,:iend],'b--')
+            plt.plot(zvalues[:iend],accel_limits[1,:iend],'b-')
+            plt.plot(zvalues[:iend],accel_limits[2,:iend],'b--')
             if show_examples:
-                plt.plot(zevol[:iend],accel_realizations[:,:iend].T,'r',alpha=0.5)
+                plt.plot(zvalues_full[:iend_full],accel_realizations[:,:iend_full].T,'r',alpha=0.5)
             plt.xlabel(r'$z$')
             plt.ylabel(r'$H(z)/(1+z)$ (Mpc)')
 
