@@ -1,5 +1,6 @@
 TODO:
 
+- Add a point at 1 for DA/DA0 curve.
 - Add curves for DH0,DA0.
 - Option to write json file to configure web display of plots
 - Add javascript and html to display plots

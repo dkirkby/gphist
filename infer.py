@@ -16,7 +16,7 @@ def main():
         help = 'random seed to use for sampling the prior')
     parser.add_argument('--num-samples', type = int, default = 1000000,
         help = 'number of samples to generate')
-    parser.add_argument('--num-evol-hist', type = int, default = 50,
+    parser.add_argument('--num-evol-hist', type = int, default = 100,
         help = 'number of equally spaced evolution variable steps to use for histogramming')
     parser.add_argument('--max-array-size', type = float, default = 1.0,
         help = 'maximum array memory allocation size in gigabytes')
@@ -30,13 +30,13 @@ def main():
         help = 'number of consecutive marginalization grid indices to run')
     parser.add_argument('--hyper-num-h', type = int, default = 10,
         help = 'number of h grid points in marginalization grid')
-    parser.add_argument('--hyper-h-min', type = float, default = 0.02,
+    parser.add_argument('--hyper-h-min', type = float, default = 0.03,
         help = 'minimum value of hyperparameter h for marginalization grid')
     parser.add_argument('--hyper-h-max', type = float, default = 0.5,
         help = 'maximum value of hyperparameter h for marginalization grid')
     parser.add_argument('--hyper-num-sigma', type = int, default = 20,
         help = 'number of sigma grid points in marginalization grid')
-    parser.add_argument('--hyper-sigma-min', type = float, default = 0.001,
+    parser.add_argument('--hyper-sigma-min', type = float, default = 0.002,
         help = 'minimum value of hyperparameter sigma for marginalization grid')
     parser.add_argument('--hyper-sigma-max', type = float, default = 1.0,
         help = 'maximum value of hyperparameter sigma for marginalization grid')
