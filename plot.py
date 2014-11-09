@@ -96,10 +96,11 @@ def main():
             nlp_const = -np.log(n_samples)
             nlp_levels = gphist.analysis.get_delta_chisq(num_dof=2)
         else:
-            print DH0-loaded['DH0']
-            assert np.array_equal(DH0,loaded['DH0']),'Found inconsistent DH0'
-            assert np.array_equal(DA0,loaded['DA0']),'Found inconsistent DA0'
-            assert np.array_equal(zvalues,loaded['zvalues']),'Found inconsistent zvalues'
+            # Distance arrays might differ by roundoff errors because of different downsampling.
+            assert np.array_allclose(DH0,loaded['DH0']),'Found inconsistent DH0'
+            assert np.array_allclose(DA0,loaded['DA0']),'Found inconsistent DA0'
+            assert np.array_allclose(zvalues,loaded['zvalues']),'Found inconsistent zvalues'
+            # The following arrays should be identical.
             assert np.array_equal(bin_range,loaded['bin_range']),\
                 'Found inconsistent bin_range'
             assert np.array_equal(posterior_names,loaded['posterior_names']),\
