@@ -96,8 +96,7 @@ def main():
             nlp_const = -np.log(n_samples)
             nlp_levels = gphist.analysis.get_delta_chisq(num_dof=2)
         else:
-            print DH0
-            print loaded['DH0']
+            print DH0-loaded['DH0']
             assert np.array_equal(DH0,loaded['DH0']),'Found inconsistent DH0'
             assert np.array_equal(DA0,loaded['DA0']),'Found inconsistent DA0'
             assert np.array_equal(zvalues,loaded['zvalues']),'Found inconsistent zvalues'
