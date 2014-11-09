@@ -76,11 +76,7 @@ def main():
             DH0 = loaded['DH0']
             DA0 = loaded['DA0']
             zvalues = loaded['zvalues']
-            zvalues_full = loaded['zvalues_full']
-            DH0_full = loaded['DH0_full']
-            DA0_full = loaded['DA0_full']
             fixed_options = loaded['fixed_options']
-            variable_options = loaded['variable_options']
             bin_range = loaded['bin_range']
             hyper_range = loaded['hyper_range']
             if show_examples:
@@ -103,9 +99,6 @@ def main():
             assert np.array_equal(DH0,loaded['DH0']),'Found inconsistent DH0'
             assert np.array_equal(DA0,loaded['DA0']),'Found inconsistent DA0'
             assert np.array_equal(zvalues,loaded['zvalues']),'Found inconsistent zvalues'
-            assert np.array_equal(zvalues_full,loaded['zvalues_full']),'Found inconsistent zvalues_full'
-            assert np.array_equal(DH0_full,loaded['DH0_full']),'Found inconsistent DH0_full'
-            assert np.array_equal(DA0_full,loaded['DA0_full']),'Found inconsistent DA0_full'
             assert np.array_equal(bin_range,loaded['bin_range']),\
                 'Found inconsistent bin_range'
             assert np.array_equal(posterior_names,loaded['posterior_names']),\
@@ -116,7 +109,12 @@ def main():
                 'Found inconsistent hyperparameter grids'
             DH_hist += loaded['DH_hist']
             DA_hist += loaded['DA_hist']
-            variable_options = loaded['variable_options']
+        
+        # Always load these arrays.
+        zvalues_full = loaded['zvalues_full']
+        DH0_full = loaded['DH0_full']
+        DA0_full = loaded['DA0_full']
+        variable_options = loaded['variable_options']
 
         seed,hyper_index,hyper_offset = variable_options
 
