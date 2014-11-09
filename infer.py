@@ -22,7 +22,7 @@ def main():
         help = 'maximum array memory allocation size in gigabytes')
     parser.add_argument('--hyper-h', type = float, default = 0.1,
         help = 'vertical scale hyperparameter value to use')
-    parser.add_argument('--hyper-sigma', type = float, default = 0.05,
+    parser.add_argument('--hyper-sigma', type = float, default = 0.02,
         help = 'horizontal scale hyperparameter value to use')
     parser.add_argument('--hyper-index', type = int, default = None,
         help = 'index into hyperparameter marginalization grid to use (ignore if None)')
@@ -30,13 +30,13 @@ def main():
         help = 'number of consecutive marginalization grid indices to run')
     parser.add_argument('--hyper-num-h', type = int, default = 10,
         help = 'number of h grid points in marginalization grid')
-    parser.add_argument('--hyper-h-min', type = float, default = 0.03,
+    parser.add_argument('--hyper-h-min', type = float, default = 0.01,
         help = 'minimum value of hyperparameter h for marginalization grid')
-    parser.add_argument('--hyper-h-max', type = float, default = 0.5,
+    parser.add_argument('--hyper-h-max', type = float, default = 1.0,
         help = 'maximum value of hyperparameter h for marginalization grid')
     parser.add_argument('--hyper-num-sigma', type = int, default = 20,
         help = 'number of sigma grid points in marginalization grid')
-    parser.add_argument('--hyper-sigma-min', type = float, default = 0.002,
+    parser.add_argument('--hyper-sigma-min', type = float, default = 0.001,
         help = 'minimum value of hyperparameter sigma for marginalization grid')
     parser.add_argument('--hyper-sigma-max', type = float, default = 1.0,
         help = 'maximum value of hyperparameter sigma for marginalization grid')

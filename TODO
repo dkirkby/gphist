@@ -1,6 +1,7 @@
 TODO:
 
-- Add a point at 1 for DA/DA0 curve.
+- Add a point at 1 for DA/DA0 curve?
+- Support NLP plots using partial scan results.
 - Add curves for DH0,DA0.
 - Option to write json file to configure web display of plots
 - Add javascript and html to display plots
@@ -9,6 +10,4 @@ TODO:
 - Test that an expansion history different from DH0 can be recovered w/o bias.
 - Check memory usage and avoid copies of large DH,DA arrays.
 - Implement Omega_de(z) plots.
-- When h is large and sigma is small, the DA prior is no longer compatible with DA0.
-  How should this be handled?
 - Use an external config file (json?) to set posteriors, including redshifts.
