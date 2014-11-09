@@ -191,7 +191,7 @@ class DHPosterior(Posterior):
 		Returns:
 			ndarray: Array of -log(prob) values calculated at each input value.
 		"""
-		return self.pdf(DHz)
+		return self.pdf.get_nlp(DHz)
 
 class DAPosterior(Posterior):
 	"""Posterior constraint on DA(z).
@@ -216,7 +216,7 @@ class DAPosterior(Posterior):
 		Returns:
 			ndarray: Array of -log(prob) values calculated at each input value.
 		"""
-		return self.pdf(DAz)
+		return self.pdf.get_nlp(DAz)
 
 class CMBPosterior(Posterior):
 	"""Posterior constraint on DH(zref) and DA(zref) from CMB with zpost ~ z*.

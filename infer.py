@@ -64,12 +64,23 @@ def main():
 
     # Initialize the posteriors to use.
     posteriors = [
+        # Debugging posteriors: 0.1% measurements of DH,DA at z=2.
+        '''
+        gphist.posterior.DHPosterior('DH',2.0,1450.0,1.45),
+        gphist.posterior.DAPosterior('DA',2.0,5300.0,5.3),
+        gphist.posterior.BAOPosterior('DH+DA',2.0,
+            1450.0/args.rsdrag,1.45/args.rsdrag,
+            5300.0/args.rsdrag,5.3/args.rsdrag,0.,args.rsdrag),
+        '''
         # Local H0 measurement from Reis 2013.
         gphist.posterior.LocalH0Posterior('H0',74.8,3.1),
+
         # BOSS LRG BAO from Anderson 2014.
         gphist.posterior.BAOPosterior('LRG',args.zLRG,20.74,0.69,14.95,0.21,-0.52,args.rsdrag),
+
         # BOSS Lya-Lya & QSO-Lya from Delubac 2014.
         gphist.posterior.BAOPosterior('Lya',args.zLya,9.15,1.22,36.46,0.20,-0.38,args.rsdrag),
+
         # Extended CMB case from Shahab Nov-4 email.
         gphist.posterior.CMBPosterior('CMB',args.zstar,0.1871433E+00,0.1238882E+02,
             6.57448e-05,0.00461449,0.338313)

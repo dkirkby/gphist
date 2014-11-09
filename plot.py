@@ -192,8 +192,7 @@ def main():
             plt.subplot(num_plot_rows,2,2*irow+1)
             plt.xscale('log')
             plt.grid(True)
-            plt.xlim([1.,1000.])
-            plt.ylim([0.5,1.7])
+            plt.xlim([1.,1+np.max(zvalues)])
             plt.fill_between(1+zvalues,DH_ratio_limits[0],DH_ratio_limits[-1],
                 facecolor='blue',alpha=0.25)
             plt.plot(1+zvalues,DH_ratio_limits[0],'b--')
@@ -207,8 +206,7 @@ def main():
             plt.subplot(num_plot_rows,2,2*irow+2)
             plt.xscale('log')
             plt.grid(True)
-            plt.xlim([1.,1000.])
-            plt.ylim([0.5,1.7])
+            plt.xlim([1.,1+np.max(zvalues)])
             plt.fill_between(1+zvalues[1:],DA_ratio_limits[0],DA_ratio_limits[-1],
                 facecolor='blue',alpha=0.25)
             plt.plot(1+zvalues[1:],DA_ratio_limits[0],'b--')
