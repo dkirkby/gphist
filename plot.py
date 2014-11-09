@@ -19,7 +19,7 @@ def main():
         help = 'name of input file(s) to read (wildcard patterns are supported)')
     parser.add_argument('--posterior', type = str, action='append', metavar = 'NAME',
         help = 'posteriors to plot (can be repeated, plot all if None)')
-    parser.add_argument('--nll', action = 'store_true',
+    parser.add_argument('--nlp', action = 'store_true',
         help = 'show plots of posterior -logL marginalized over hyperparameters')
     parser.add_argument('--full', action = 'store_true',
         help = 'show plots of DH/DH0,DA/DA0 evolution over full redshift range')
@@ -54,7 +54,7 @@ def main():
 
     # Do we have anything to plot?
     num_plot_rows = args.full + args.zoom + args.dark_energy
-    if num_plot_rows == 0 and not args.nll:
+    if num_plot_rows == 0 and not args.nlp:
         print 'No plots selected.'
         return 0
     show_examples = not args.no_examples
@@ -95,10 +95,10 @@ def main():
             h_min,h_max,sigma_min,sigma_max = hyper_range
             hyper_grid = gphist.process.HyperParameterLogGrid(
                 n_h,h_min,h_max,n_sigma,sigma_min,sigma_max)
-            # Initialize array of marginalized posterior NLL values over hyperparameters.
-            hyper_nll = np.zeros((2**npost,n_h,n_sigma))
-            nll_const = -np.log(n_samples)
-            nll_levels = gphist.analysis.get_delta_chisq(num_dof=2)
+            # Initialize array of marginalized posterior NLP values over hyperparameters.
+            hyper_nlp = np.zeros((2**npost,n_h,n_sigma))
+            nlp_const = -np.log(n_samples)
+            nlp_levels = gphist.analysis.get_delta_chisq(num_dof=2)
         else:
             assert np.array_equal(DH0,loaded['DH0']),'Found inconsistent DH0'
             assert np.array_equal(DA0,loaded['DA0']),'Found inconsistent DA0'
@@ -134,7 +134,7 @@ def main():
             # as the sum of histogram weights.  All DH and DA histograms have the same sum
             # of weights so we arbitrarily use the first DH histogram.
             marginal_weights = np.sum(loaded['DH_hist'][:,0,:],axis=1)
-            hyper_nll[:,i_h,i_sigma] += -np.log(marginal_weights) - nll_const
+            hyper_nlp[:,i_h,i_sigma] += -np.log(marginal_weights) - nlp_const
 
     # Loop over posterior permutations.
     for iperm,perm in enumerate(perms):
@@ -144,20 +144,20 @@ def main():
             continue
         print '%d : %s' % (iperm,name)
 
-        if args.nll:
-            fig = plt.figure('NLL-'+name,figsize=(10,10))
+        if args.nlp:
+            fig = plt.figure('NLP-'+name,figsize=(10,10))
             fig.set_facecolor('white')
             plt.xscale('linear')
             plt.yscale('log')
-            nll = hyper_nll[iperm] - np.min(hyper_nll[iperm])
-            plt.pcolormesh(hyper_grid.sigma_edges,hyper_grid.h_edges,nll,
+            nlp = hyper_nlp[iperm] - np.min(hyper_nlp[iperm])
+            plt.pcolormesh(hyper_grid.sigma_edges,hyper_grid.h_edges,nlp,
                 cmap='rainbow',rasterized=True)
             if iperm > 0: # Cannot plot contours for the flat prior.
-                plt.contour(hyper_grid.sigma,hyper_grid.h,nll,colors='w',
-                    levels=nll_levels,linestyles=('-','--',':'))
+                plt.contour(hyper_grid.sigma,hyper_grid.h,nlp,colors='w',
+                    levels=nlp_levels,linestyles=('-','--',':'))
             plt.xlabel(r'Hyperparameter $\sigma$')
             plt.ylabel(r'Hyperparameter $h$')
-            plt.savefig(args.output + 'NLL-' + name + '.' + args.plot_format)
+            plt.savefig(args.output + 'NLP-' + name + '.' + args.plot_format)
             if args.show:
                 plt.show()
             plt.close()

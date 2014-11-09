@@ -65,13 +65,12 @@ def main():
     # Initialize the posteriors to use.
     posteriors = [
         # Debugging posteriors: 0.1% measurements of DH,DA at z=2.
-        '''
-        gphist.posterior.DHPosterior('DH',2.0,1450.0,1.45),
-        gphist.posterior.DAPosterior('DA',2.0,5300.0,5.3),
-        gphist.posterior.BAOPosterior('DH+DA',2.0,
-            1450.0/args.rsdrag,1.45/args.rsdrag,
-            5300.0/args.rsdrag,5.3/args.rsdrag,0.,args.rsdrag),
-        '''
+        #gphist.posterior.DHPosterior('DH',2.0,1450.0,1.45),
+        #phist.posterior.DAPosterior('DA',2.0,5300.0,5.3),
+        #gphist.posterior.BAOPosterior('DH+DA',2.0,
+        #    1450.0/args.rsdrag,1.45/args.rsdrag,
+        #    5300.0/args.rsdrag,5.3/args.rsdrag,0.,args.rsdrag),
+
         # Local H0 measurement from Reis 2013.
         gphist.posterior.LocalH0Posterior('H0',74.8,3.1),
 

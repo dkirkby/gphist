@@ -20,6 +20,6 @@ The histograms are written to disk, so this is also the output file size.
 
 Run hyperparameter marginalization:
 
-~/multi/multi --nohup --split 0:200:10 --run "./infer.py --seed NNN --hyper-index NNN --hyper-count 10 --output hyper_NNN --num-samples 100000 --num-cycles 100"
+~/multi/multi --nohup --split 0:25:1 --run "./infer.py --seed NNN --hyper-num-h 5 --hyper-num-sigma 5 --hyper-index NNN --output hyper_NNN --num-samples 1000000"
 
 ./plot.py --input 'hyper_*.npz' --nll --full --zoom --output plots/hyper-
