@@ -3,22 +3,25 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to gphist's documentation!
-==================================
+Documentation for the gphist package
+====================================
 
-Something about the package here...
+The gphist package performs Bayesian inference on the cosmological expansion history using Gaussian process priors. The code is written in python and includes driver programs to run inference calculations and plot the results.
 
-API
----
+Programs
+--------
+
+.. toctree::
+	:maxdepth: 2
+
+	infer
+	plot
+	examples
+
+Library Modules
+---------------
 
 .. toctree::
    :maxdepth: 2
 
    src/gphist
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
