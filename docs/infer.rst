@@ -1,5 +1,5 @@
-Inference
-=========
+infer
+=====
 
 Describe the infer.py program here...
 

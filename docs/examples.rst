@@ -1,4 +1,4 @@
-Examples
+examples
 ========
 
 Run inference on a grid of hyperparameter values::
