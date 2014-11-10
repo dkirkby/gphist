@@ -15,6 +15,7 @@ Programs
 	:maxdepth: 2
 
 	infer
+	combine
 	plot
 	examples
 

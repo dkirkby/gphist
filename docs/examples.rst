@@ -7,4 +7,4 @@ Run inference on a grid of hyperparameter values::
 
 Generate plots::
 
-	./plot.py --input 'hyper20_*.npz' --nlp --full --zoom --output plots/hyper- --no-examples
+	./plot.py --input 'hyper20_*.npz' --nlp --full --zoom --output plots/hyper20- --no-examples
