@@ -62,8 +62,9 @@ def main():
             assert np.allclose(DH0,loaded['DH0'],rtol=1e-6,atol=1e-8),\
                 'Found inconsistent DH0'
             # The DA integrals will generally differ by more because of varying step sizes.
-            if not np.allclose(DA0,loaded['DA0'],rtol=5e-4,atol=0.):
-                maxdiff = np.max((DA0-loaded['DA0'])/loaded['DA0'])
+            if not np.allclose(DA0,loaded['DA0'],rtol=1e-3,atol=0.):
+                diff = DA0-loaded['DA0']
+                maxdiff = np.max(diff[1:]/loaded['DA0'][1:])
                 print 'WARNING: relative difference between DA0 values is %f' % maxdiff
             # The following arrays should be identical.
             assert np.array_equal(bin_range,loaded['bin_range']),\
