@@ -11,3 +11,5 @@ TODO:
 - Check memory usage and avoid copies of large DH,DA arrays.
 - Implement Omega_de(z) plots.
 - Use an external config file (json?) to set posteriors, including redshifts.
+- Always use same fine grid to calculate DA0 to avoid O(1e-4) differences with sigma.
+- Add a --zhist plot.py option to draw DH,DA histograms at zhist (with interpolation?)

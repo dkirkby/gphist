@@ -109,7 +109,9 @@ def main():
             fig.set_facecolor('white')
             plt.xscale('log')
             plt.yscale('log')
-            nlp = hyper_nlp[iperm] - np.min(hyper_nlp[iperm])
+            missing = hyper_nlp[iperm] == 0
+            nlp_min = np.min(hyper_nlp[iperm,np.logical_not(missing)])
+            nlp = np.ma.array(hyper_nlp[iperm]-nlp_min,mask=missing)
             plt.pcolormesh(hyper_grid.sigma_edges,hyper_grid.h_edges,nlp,
                 cmap='rainbow',rasterized=True)
             if iperm > 0: # Cannot plot contours for the flat prior.
