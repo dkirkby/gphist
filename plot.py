@@ -94,7 +94,6 @@ def main():
 
     # Initialize -log(P) plotting.
     if args.nlp:
-        nlp_const = -np.log(n_samples)
         nlp_levels = gphist.analysis.get_delta_chisq(num_dof=2)
 
     # Loop over posterior permutations.

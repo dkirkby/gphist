@@ -54,6 +54,7 @@ def main():
                 n_h,h_min,h_max,n_sigma,sigma_min,sigma_max)
             # Initialize array of marginalized posterior NLP values over hyperparameters.
             hyper_nlp = np.zeros((2**npost,n_h,n_sigma))
+            nlp_const = -np.log(n_samples)
         else:
             # Distance arrays might differ by roundoff errors because of different downsampling.
             assert np.allclose(DH0,loaded['DH0']),'Found inconsistent DH0'
