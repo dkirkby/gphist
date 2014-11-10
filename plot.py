@@ -1,9 +1,8 @@
 #!/usr/bin/env python
-"""Plots expansion history inferences.
+"""Plot expansion history inferences.
 """
 
 import argparse
-import glob
 
 import numpy as np
 # matplotlib is imported inside main()
@@ -16,27 +15,27 @@ def main():
     # Parse command-line arguments.
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--input',type = str, default = None,
-        help = 'name of input file(s) to read (wildcard patterns are supported)')
+        help = 'name of input file to read (extension .npz will be added)')
     parser.add_argument('--posterior', type = str, action='append', metavar = 'NAME',
-        help = 'posteriors to plot (can be repeated, plot all if None)')
+        help = 'posteriors to plot (can be repeated, plot all if omitted)')
     parser.add_argument('--nlp', action = 'store_true',
-        help = 'show plots of posterior -logL marginalized over hyperparameters')
+        help = 'show plots of posterior -log(P) marginalized over hyperparameters')
     parser.add_argument('--full', action = 'store_true',
-        help = 'show plots of DH/DH0,DA/DA0 evolution over full redshift range')
+        help = 'show plots of DH/DH0,DA/DA0 evolution over the full redshift range')
     parser.add_argument('--zoom', action = 'store_true',
-        help = 'show plots of DH,DA on linear scale up to redshift zmax')
+        help = 'show plots of DH,DA on a linear scale up to redshift zmax')
     parser.add_argument('--dark-energy', action = 'store_true',
         help = 'show plots of H(z)/(1+z) and Omega_DE(z)/Omega_DE(0) up to redshift zmax')
-    parser.add_argument('--level', type = float, default = 0.9,
-        help = 'confidence level to plot')
-    parser.add_argument('--no-examples', action = 'store_true',
-        help = 'do not show examples of random realizations of DH(z) and DA(z)')
     parser.add_argument('--zmax', type = float, default = 3.0,
         help = 'maximum redshift to display on H(z)/(1+z) plot')
-    parser.add_argument('--output', type = str, default = '',
-        help = 'base name for saving plots')
+    parser.add_argument('--level', type = float, default = 0.9,
+        help = 'confidence level to plot')
+    parser.add_argument('--examples', action = 'store_true',
+        help = 'include examples of random realizations in each plot')
+    parser.add_argument('--output', type = str, default = None,
+        help = 'base name for saving plots (no plots are saved if not set)')
     parser.add_argument('--show', action = 'store_true',
-        help = 'show each plot')
+        help = 'show each plot (in addition to saving it if output is set)')
     parser.add_argument('--plot-format', type = str, default = 'png', metavar = 'FMT',
         help = 'format for saving plots (png,pdf,...)')
     args = parser.parse_args()
@@ -45,19 +44,17 @@ def main():
     if args.input is None:
         print 'Missing required input arg.'
         return -1
-    input_files = glob.glob(args.input)
-    if not input_files:
-        input_files = glob.glob(args.input + '.npz')
-    if not input_files:
-        print 'No input files match the pattern %r' % args.input
-        return -1
 
     # Do we have anything to plot?
     num_plot_rows = args.full + args.zoom + args.dark_energy
     if num_plot_rows == 0 and not args.nlp:
         print 'No plots selected.'
         return 0
-    show_examples = not args.no_examples
+    if not args.output and not args.show:
+        print 'No output requested.'
+    if args.examples:
+        print 'Option --examples not implemented yet.'
+        return -1
 
     # Initialize matplotlib.
     import matplotlib as mpl
@@ -66,77 +63,39 @@ def main():
         mpl.use('Agg')
     import matplotlib.pyplot as plt
 
-    # Combine the histograms from each input file.
-    random_states = { }
-    for index,input_file in enumerate(input_files):
-        loaded = np.load(input_file)
-        print 'Loaded',input_file
-        if index == 0:
-            DH_hist = loaded['DH_hist']
-            DA_hist = loaded['DA_hist']
-            DH0 = loaded['DH0']
-            DA0 = loaded['DA0']
-            zvalues = loaded['zvalues']
-            fixed_options = loaded['fixed_options']
-            bin_range = loaded['bin_range']
-            hyper_range = loaded['hyper_range']
-            if show_examples:
-                DH_realizations = loaded['DH_realizations']
-                DA_realizations = loaded['DA_realizations']
-            posterior_names = loaded['posterior_names']
-            # Initialize the posterior permutations.
-            npost = len(posterior_names)
-            perms = gphist.analysis.get_permutations(npost)
-            # Initialize the hyperparameter grid.
-            n_samples,n_h,n_sigma = fixed_options
-            h_min,h_max,sigma_min,sigma_max = hyper_range
-            hyper_grid = gphist.process.HyperParameterLogGrid(
-                n_h,h_min,h_max,n_sigma,sigma_min,sigma_max)
-            # Initialize array of marginalized posterior NLP values over hyperparameters.
-            hyper_nlp = np.zeros((2**npost,n_h,n_sigma))
-            nlp_const = -np.log(n_samples)
-            nlp_levels = gphist.analysis.get_delta_chisq(num_dof=2)
+    # Load the input file.
+    loaded = np.load(args.input + '.npz')
+    DH_hist = loaded['DH_hist']
+    DA_hist = loaded['DA_hist']
+    DH0 = loaded['DH0']
+    DA0 = loaded['DA0']
+    zvalues = loaded['zvalues']
+    fixed_options = loaded['fixed_options']
+    bin_range = loaded['bin_range']
+    hyper_range = loaded['hyper_range']
+    posterior_names = loaded['posterior_names']
+    # The -log(P) array is only present if this file was written by combine.py
+    hyper_nlp = None
+    if args.nlp:
+        if 'hyper_nlp' in loaded.files:
+            hyper_nlp = loaded['hyper_nlp']
         else:
-            # Distance arrays might differ by roundoff errors because of different downsampling.
-            assert np.allclose(DH0,loaded['DH0']),'Found inconsistent DH0'
-            print DA0-loaded['DA0']
-            #assert np.allclose(DA0,loaded['DA0']),'Found inconsistent DA0'
-            assert np.allclose(zvalues,loaded['zvalues']),'Found inconsistent zvalues'
-            # The following arrays should be identical.
-            assert np.array_equal(bin_range,loaded['bin_range']),\
-                'Found inconsistent bin_range'
-            assert np.array_equal(posterior_names,loaded['posterior_names']),\
-                'Found inconsistent posterior_names'
-            assert np.array_equal(fixed_options,loaded['fixed_options']),\
-                'Found inconsistent fixed options'
-            assert np.array_equal(hyper_range,loaded['hyper_range']),\
-                'Found inconsistent hyperparameter grids'
-            DH_hist += loaded['DH_hist']
-            DA_hist += loaded['DA_hist']
-        
-        # Always load these arrays.
-        zvalues_full = loaded['zvalues_full']
-        DH0_full = loaded['DH0_full']
-        DA0_full = loaded['DA0_full']
-        variable_options = loaded['variable_options']
+            print 'Ignoring option --nlp since -log(P) values are not available.'
+            args.nlp = False
 
-        seed,hyper_index,hyper_offset = variable_options
+    # Initialize the posterior permutations.
+    npost = len(posterior_names)
+    perms = gphist.analysis.get_permutations(npost)
+    # Initialize the hyperparameter grid.
+    n_samples,n_h,n_sigma = fixed_options
+    h_min,h_max,sigma_min,sigma_max = hyper_range
+    hyper_grid = gphist.process.HyperParameterLogGrid(
+        n_h,h_min,h_max,n_sigma,sigma_min,sigma_max)
 
-        # Check that each input was calculated using a different random state.
-        random_state = (seed,hyper_offset)
-        if random_state in random_states:
-            print 'ERROR: random state %r is duplicated in %s' % (random_state,input_file)
-            return -1
-        random_states[random_state] = input_file
-
-        # Accumulate marginalized hyperparameter statistics.
-        if hyper_index is not None:
-            i_h,i_sigma = hyper_grid.decode_index(hyper_index)
-            # Calculate the posterior weight of this permutation marginalized over the prior
-            # as the sum of histogram weights.  All DH and DA histograms have the same sum
-            # of weights so we arbitrarily use the first DH histogram.
-            marginal_weights = np.sum(loaded['DH_hist'][:,0,:],axis=1)
-            hyper_nlp[:,i_h,i_sigma] += -np.log(marginal_weights) - nlp_const
+    # Initialize -log(P) plotting.
+    if args.nlp:
+        nlp_const = -np.log(n_samples)
+        nlp_levels = gphist.analysis.get_delta_chisq(num_dof=2)
 
     # Loop over posterior permutations.
     for iperm,perm in enumerate(perms):
@@ -159,7 +118,8 @@ def main():
                     levels=nlp_levels,linestyles=('-','--',':'))
             plt.xlabel(r'Hyperparameter $\sigma$')
             plt.ylabel(r'Hyperparameter $h$')
-            plt.savefig(args.output + 'NLP-' + name + '.' + args.plot_format)
+            if args.output:
+                plt.savefig(args.output + 'NLP-' + name + '.' + args.plot_format)
             if args.show:
                 plt.show()
             plt.close()
@@ -180,7 +140,6 @@ def main():
 
             # Find first z index beyond zmax.
             iend = 1+np.argmax(zvalues > args.zmax)
-            iend_full = 1+np.argmax(zvalues_full > args.zmax)
 
             fig = plt.figure(name,figsize=(12,4*num_plot_rows))
             fig.subplots_adjust(left=0.06,bottom=0.07,right=0.98,
@@ -200,8 +159,6 @@ def main():
             plt.plot(1+zvalues,DH_ratio_limits[0],'b--')
             plt.plot(1+zvalues,DH_ratio_limits[1],'b-')
             plt.plot(1+zvalues,DH_ratio_limits[2],'b--')
-            if show_examples:
-                plt.plot(1+zvalues_full,(DH_realizations[iperm]/DH0_full).T,'r',alpha=0.5)
             plt.xlabel(r'$1+z$')
             plt.ylabel(r'$D_H(z)/D_H^0(z)$')
 
@@ -214,8 +171,6 @@ def main():
             plt.plot(1+zvalues[1:],DA_ratio_limits[0],'b--')
             plt.plot(1+zvalues[1:],DA_ratio_limits[1],'b-')
             plt.plot(1+zvalues[1:],DA_ratio_limits[2],'b--')
-            if show_examples:
-                plt.plot(1+zvalues_full[1:],(DA_realizations[iperm,:,1:]/DA0_full[1:]).T,'r',alpha=0.5)
             plt.xlabel(r'$1+z$')
             plt.ylabel(r'$D_A(z)/D_A^0(z)$')
 
@@ -233,9 +188,6 @@ def main():
             plt.plot(zvalues[:iend],1e-3*DH_limits[0,:iend],'b--')
             plt.plot(zvalues[:iend],1e-3*DH_limits[1,:iend],'b-')
             plt.plot(zvalues[:iend],1e-3*DH_limits[2,:iend],'b--')
-            if show_examples:
-                plt.plot(zvalues_full[:iend_full],
-                    1e-3*DH_realizations[iperm,:,:iend_full].T,'r',alpha=0.5)
             plt.xlabel(r'$z$')
             plt.ylabel(r'$D_H(z)$ (Gpc)')
 
@@ -248,9 +200,6 @@ def main():
             plt.plot(zvalues[:iend],1e-3*DA_limits[0,:iend],'b--')
             plt.plot(zvalues[:iend],1e-3*DA_limits[1,:iend],'b-')
             plt.plot(zvalues[:iend],1e-3*DA_limits[2,:iend],'b--')
-            if show_examples:
-                plt.plot(zvalues_full[:iend_full],
-                    1e-3*DA_realizations[iperm,:,:iend_full].T,'r',alpha=0.5)
             plt.xlabel(r'$z$')
             plt.ylabel(r'$D_A(z)$ (Gpc)')
 
@@ -261,8 +210,6 @@ def main():
 
             # Calculate the corresponding limits and realizations acceleration H(z)/(1+z).
             accel_limits = clight/DH_limits/(1+zvalues)
-            if show_examples:
-                accel_realizations = clight/DH_realizations[iperm]/(1+zvalues_full)
 
             plt.subplot(num_plot_rows,2,2*irow+1)
             plt.xscale('linear')
@@ -273,15 +220,14 @@ def main():
             plt.plot(zvalues[:iend],accel_limits[0,:iend],'b--')
             plt.plot(zvalues[:iend],accel_limits[1,:iend],'b-')
             plt.plot(zvalues[:iend],accel_limits[2,:iend],'b--')
-            if show_examples:
-                plt.plot(zvalues_full[:iend_full],accel_realizations[:,:iend_full].T,'r',alpha=0.5)
             plt.xlabel(r'$z$')
             plt.ylabel(r'$H(z)/(1+z)$ (Mpc)')
 
             irow += 1
 
         if num_plot_rows > 0:
-            plt.savefig(args.output + name + '.' + args.plot_format)
+            if args.output:
+                plt.savefig(args.output + name + '.' + args.plot_format)
             if args.show:
                 plt.show()
             plt.close()

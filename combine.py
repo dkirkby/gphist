@@ -100,5 +100,14 @@ def main():
             marginal_weights = np.sum(loaded['DH_hist'][:,0,:],axis=1)
             hyper_nlp[:,i_h,i_sigma] += -np.log(marginal_weights) - nlp_const
 
+    if args.output:
+        output_name = '%s.npz' % args.output
+        # Relative to the infer.py output format, we drop arrays whose binning
+        # varies between inputs (*_full and *_realizations), and add hyper_nlp.
+        np.savez(output_name,
+            DH_hist=DH_hist,DA_hist=DA_hist,DH0=DH0,DA0=DA0,zvalues=zvalues,
+            fixed_options=fixed_options,bin_range=bin_range,hyper_range=hyper_range,
+            posterior_names=posterior_names,hyper_nlp=hyper_nlp)
+
 if __name__ == '__main__':
     main()
