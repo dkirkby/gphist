@@ -37,9 +37,9 @@ def main():
         if index == 0:
             DH_hist = loaded['DH_hist']
             DA_hist = loaded['DA_hist']
+            zvalues = loaded['zvalues']
             DH0 = loaded['DH0']
             DA0 = loaded['DA0']
-            zvalues = loaded['zvalues']
             fixed_options = loaded['fixed_options']
             bin_range = loaded['bin_range']
             hyper_range = loaded['hyper_range']
@@ -57,11 +57,14 @@ def main():
             nlp_const = -np.log(n_samples)
         else:
             # Distance arrays might differ by roundoff errors because of different downsampling.
-            assert np.allclose(DH0,loaded['DH0']),'Found inconsistent DH0'
-            diff = DA0-loaded['DA0']
-            print diff[1:]/DA0[1:]
-            #assert np.allclose(DA0,loaded['DA0']),'Found inconsistent DA0'
-            assert np.allclose(zvalues,loaded['zvalues']),'Found inconsistent zvalues'
+            assert np.allclose(zvalues,loaded['zvalues'],rtol=1e-6,atol=1e-8),\
+                'Found inconsistent zvalues'
+            assert np.allclose(DH0,loaded['DH0'],rtol=1e-6,atol=1e-8),\
+                'Found inconsistent DH0'
+            # The DA integrals will generally differ by more because of varying step sizes.
+            if not np.allclose(DA0,loaded['DA0'],rtol=5e-4,atol=0.):
+                maxdiff = np.max((DA0-loaded['DA0'])/loaded['DA0'])
+                print 'WARNING: relative difference between DA0 values is %f' % maxdiff
             # The following arrays should be identical.
             assert np.array_equal(bin_range,loaded['bin_range']),\
                 'Found inconsistent bin_range'
