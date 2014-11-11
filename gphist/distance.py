@@ -3,6 +3,8 @@
 
 import numpy as np
 
+import gphist # for clight_km_per_sec
+
 def convert_DC_to_DA(DH,DC,omega_k):
     """Applies curvature to convert DC(z) into DA(z).
 
@@ -26,6 +28,23 @@ def convert_DC_to_DA(DH,DC,omega_k):
         w = DH[:,0]/np.sqrt(+omega_k)
         DC[:] = w*np.sinh(DC*w)
     return DC
+
+def get_acceleration(z,DH):
+    """Calculates the cosmic acceleration H(z)/(1+z).
+
+    Args:
+        z(ndarray): Array of redshifts where DH is tabulated.
+        DH(ndarray): Array of Hubble distances DH(z) = c/H(z). Must have
+            the same last dimension as z.
+
+    Returns:
+        ndarray: Array of calculated H(z)/(1+z) values with the same
+            shape as the input DH array.
+
+    Raises:
+        ValueError: Arrays z and DH do not have the same last dimension.
+    """
+    return gphist.clight_km_per_sec/DH/(1+z)
 
 def fiducial_DH(z):
     """Evaluates the fiducial cosmology distance function DH(z).

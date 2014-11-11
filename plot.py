@@ -208,7 +208,7 @@ def main():
         if args.dark_energy:
 
             # Calculate the corresponding limits and realizations acceleration H(z)/(1+z).
-            accel_limits = gphist.clight_km_per_sec/DH_limits/(1+zvalues)
+            accel_limits = gphist.distance.get_acceleration(zvalues,DH_limits)
 
             plt.subplot(num_plot_rows,2,2*irow+1)
             plt.xscale('linear')

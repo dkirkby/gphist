@@ -8,6 +8,8 @@ import numpy as np
 import numpy.linalg
 import scipy.interpolate
 
+import gphist # for clight_km_per_sec
+
 class GaussianPdf(object):
 	"""Represents a multi-dimensional Gaussian probability density function.
 
