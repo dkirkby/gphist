@@ -50,7 +50,8 @@ def get_dark_energy_fraction(z,DH):
     """Calculates the dark energy fraction Omega_phi(z)/Omega_phi(0).
 
     Assumes that dark energy has a negligible contribution at z[-1] so that
-    the matter density can be calculated from DH[-1].
+    the matter density can be calculated from DH[-1]. The result might be
+    negative.
 
     Args:
         z(ndarray): Array of redshifts where DH is tabulated.
@@ -66,16 +67,28 @@ def get_dark_energy_fraction(z,DH):
     """
     zp1 = 1+z
     zp1_cubed = zp1**3
-    # Fix the radiation density assuming N_nu = 3.046 and T_gamma = 2.7255 K.
-    Omega_rad_h0sq = 4.181e-5
+    # Fix the physical radiation density Omega_rad*h0**2 assuming
+    # massless neutrinos with N_nu = 3.046 and T_cmb = 2.7255 K.
+    omega_rad = 4.18377e-5
     # Calculate h(z) = H(z)/(100 km/s/Mpc).
     hz = gphist.clight_km_per_sec/DH/100.
-    # Calculate the matter density assuming that only matter and radiation
-    # contribute at zmax.
-    Omega_mat_h0sq = hz[...,-1]**2/zp1_cubed[-1] - Omega_rad_h0sq*zp1[-1]
-    # Calculate the dark energy density fraction Omega_phi(z)/Omega_phi(0).
-    num = (hz**2 - zp1_cubed*(Omega_mat_h0sq[...,np.newaxis] + Omega_rad_h0sq*zp1))
-    denom = (hz[...,0] - Omega_mat_h0sq - Omega_rad_h0sq)
+    # Calculate the physical matter density Omega_mat*h0**2 assuming that only
+    # matter and radiation contribute at zmax.
+    omega_mat = hz[...,-1]**2/zp1_cubed[-1] - omega_rad*zp1[-1]
+    print 'z*',z[-1]
+    print 'DH(z*)',DH[1,-1]
+    print 'h(z*)',hz[1,-1]
+    print 'omega_mat',omega_mat
+    # Calculate the physical dark energy density Omega_phi*h0**2 defined as
+    # whatever is needed to make up h(z) after accounting for matter and radiation.
+    # The result might be negative.
+    num = hz**2 - zp1_cubed*(omega_mat[...,np.newaxis] + zp1*omega_rad)
+    which = np.array([0,7,18])
+    print 'z',z[which]
+    print 'DH(z)',DH[1,which]
+    print 'h(z)',hz[1,which]
+    print 'num',num[1,which]
+    denom = hz[...,0]**2 - omega_mat - omega_rad
     return num/denom[...,np.newaxis]
 
 def fiducial_DH(z):

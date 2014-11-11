@@ -92,7 +92,9 @@ def main():
 
     # Initialize -log(P) plotting.
     if args.nlp:
-        nlp_levels = gphist.analysis.get_delta_chisq(num_dof=2)
+        # Factor of 0.5 since -logP = 0.5*chisq
+        nlp_levels = 0.5*gphist.analysis.get_delta_chisq(num_dof=2)
+        print nlp_levels
 
     # Loop over posterior permutations.
     for iperm,perm in enumerate(perms):
@@ -103,16 +105,22 @@ def main():
         print '%d : %s' % (iperm,name)
 
         if args.nlp:
-            fig = plt.figure('NLP-'+name,figsize=(10,10))
+            fig = plt.figure('NLP-'+name,figsize=(9,7))
+            fig.subplots_adjust(left=0.10,bottom=0.07,right=1.00,top=0.98)
             fig.set_facecolor('white')
             plt.xscale('log')
             plt.yscale('log')
-            missing = hyper_nlp[iperm] == 0
-            nlp_min = np.min(hyper_nlp[iperm,np.logical_not(missing)])
-            nlp = np.ma.array(hyper_nlp[iperm]-nlp_min,mask=missing)
+            if iperm > 0:
+                missing = hyper_nlp[iperm] == 0
+                nlp_min = np.min(hyper_nlp[iperm,np.logical_not(missing)])
+                nlp = np.ma.array(hyper_nlp[iperm]-nlp_min,mask=missing)
+            else:
+                # The prior distribution should be flat by construction.
+                nlp = hyper_nlp[iperm]
             plt.pcolormesh(hyper_grid.sigma_edges,hyper_grid.h_edges,nlp,
-                cmap='rainbow',rasterized=True)
+                cmap='rainbow',vmin=0.,vmax=50.,rasterized=True)
             if iperm > 0: # Cannot plot contours for the flat prior.
+                plt.colorbar()
                 plt.contour(hyper_grid.sigma,hyper_grid.h,nlp,colors='w',
                     levels=nlp_levels,linestyles=('-','--',':'))
             plt.xlabel(r'Hyperparameter $\sigma$')

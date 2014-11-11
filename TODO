@@ -13,3 +13,5 @@ TODO:
 - Always use same fine grid to calculate DA0 to avoid O(1e-4) differences with sigma.
 - Add a --zhist plot.py option to draw DH,DA histograms at zhist (with interpolation?)
 - Histogram DE acceleration and fraction instead of transforming limits?
+- Replace DA with DM throughout?
+- Find min of NLP(h,sigma) using interpolation
