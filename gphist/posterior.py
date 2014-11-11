@@ -166,7 +166,7 @@ class LocalH0Posterior(Posterior):
 		Returns:
 			ndarray: Array of -log(prob) values calculated at each input value.
 		"""
-		return self.pdf.get_nlp(299792.458/DHz)
+		return self.pdf.get_nlp(gphist.clight_km_per_sec/DHz)
 
 class DHPosterior(Posterior):
 	"""Posterior constraint on DH(z).

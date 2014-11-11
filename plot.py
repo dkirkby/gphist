@@ -9,8 +9,6 @@ import numpy as np
 
 import gphist
 
-clight = 299792.458 # speed of light in km/s
-
 def main():
     # Parse command-line arguments.
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -210,7 +208,7 @@ def main():
         if args.dark_energy:
 
             # Calculate the corresponding limits and realizations acceleration H(z)/(1+z).
-            accel_limits = clight/DH_limits/(1+zvalues)
+            accel_limits = gphist.clight_km_per_sec/DH_limits/(1+zvalues)
 
             plt.subplot(num_plot_rows,2,2*irow+1)
             plt.xscale('linear')
