@@ -12,3 +12,4 @@ TODO:
 - Use an external config file (json?) to set posteriors, including redshifts.
 - Always use same fine grid to calculate DA0 to avoid O(1e-4) differences with sigma.
 - Add a --zhist plot.py option to draw DH,DA histograms at zhist (with interpolation?)
+- Histogram DE acceleration and fraction instead of transforming limits?

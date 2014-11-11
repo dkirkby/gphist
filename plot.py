@@ -207,8 +207,11 @@ def main():
         # Plot dark-energy diagnostics up to zmax.
         if args.dark_energy:
 
-            # Calculate the corresponding limits and realizations acceleration H(z)/(1+z).
+            # Calculate the acceleration H(z)/(1+z).
             accel_limits = gphist.distance.get_acceleration(zvalues,DH_limits)
+
+            # Calculate the dark-energy fraction Omega_phi(z)/Omega_phi(0).
+            defrac_limits = gphist.distance.get_dark_energy_fraction(zvalues,DH_limits)-1
 
             plt.subplot(num_plot_rows,2,2*irow+1)
             plt.xscale('linear')
@@ -221,6 +224,18 @@ def main():
             plt.plot(zvalues[:iend],accel_limits[2,:iend],'b--')
             plt.xlabel(r'$z$')
             plt.ylabel(r'$H(z)/(1+z)$ (Mpc)')
+
+            plt.subplot(num_plot_rows,2,2*irow+2)
+            plt.xscale('linear')
+            plt.grid(True)
+            plt.xlim([0.,args.zmax])
+            plt.fill_between(zvalues[:iend],defrac_limits[0,:iend],defrac_limits[-1,:iend],
+                facecolor='blue',alpha=0.25)
+            plt.plot(zvalues[:iend],defrac_limits[0,:iend],'b--')
+            plt.plot(zvalues[:iend],defrac_limits[1,:iend],'b-')
+            plt.plot(zvalues[:iend],defrac_limits[2,:iend],'b--')
+            plt.xlabel(r'$z$')
+            plt.ylabel(r'$\Omega_{\phi}(z)/\Omega_{\phi} - 1$')
 
             irow += 1
 

@@ -46,6 +46,38 @@ def get_acceleration(z,DH):
     """
     return gphist.clight_km_per_sec/DH/(1+z)
 
+def get_dark_energy_fraction(z,DH):
+    """Calculates the dark energy fraction Omega_phi(z)/Omega_phi(0).
+
+    Assumes that dark energy has a negligible contribution at z[-1] so that
+    the matter density can be calculated from DH[-1].
+
+    Args:
+        z(ndarray): Array of redshifts where DH is tabulated.
+        DH(ndarray): Array of Hubble distances DH(z) = c/H(z). Must have
+            the same last dimension as z.
+
+    Returns:
+        ndarray: Array of calculated H(z)/(1+z) values with the same
+            shape as the input DH array.
+
+    Raises:
+        ValueError: Arrays z and DH do not have the same last dimension.
+    """
+    zp1 = 1+z
+    zp1_cubed = zp1**3
+    # Fix the radiation density assuming N_nu = 3.046 and T_gamma = 2.7255 K.
+    Omega_rad_h0sq = 4.181e-5
+    # Calculate h(z) = H(z)/(100 km/s/Mpc).
+    hz = gphist.clight_km_per_sec/DH/100.
+    # Calculate the matter density assuming that only matter and radiation
+    # contribute at zmax.
+    Omega_mat_h0sq = hz[...,-1]**2/zp1_cubed[-1] - Omega_rad_h0sq*zp1[-1]
+    # Calculate the dark energy density fraction Omega_phi(z)/Omega_phi(0).
+    num = (hz**2 - zp1_cubed*(Omega_mat_h0sq[...,np.newaxis] + Omega_rad_h0sq*zp1))
+    denom = (hz[...,0] - Omega_mat_h0sq - Omega_rad_h0sq)
+    return num/denom[...,np.newaxis]
+
 def fiducial_DH(z):
     """Evaluates the fiducial cosmology distance function DH(z).
 
