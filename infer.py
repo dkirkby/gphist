@@ -173,7 +173,7 @@ def main():
 
             # Build histograms of DH/DH0 and DA/DA0 for each redshift slice and
             # all permutations of posteriors.
-            DH_hist,DA_hist = gphist.analysis.calculate_distance_histograms(
+            DH_hist,DA_hist = gphist.analysis.calculate_histograms(
                 DH_ds,DH0_ds,DA_ds,DA0_ds,posteriors_nlp,
                 args.num_bins,args.min_ratio,args.max_ratio)
 

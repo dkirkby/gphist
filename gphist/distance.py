@@ -75,21 +75,13 @@ def get_dark_energy_fraction(z,DH):
     # Calculate the physical matter density Omega_mat*h0**2 assuming that only
     # matter and radiation contribute at zmax.
     omega_mat = hz[...,-1]**2/zp1_cubed[-1] - omega_rad*zp1[-1]
-    print 'z*',z[-1]
-    print 'DH(z*)',DH[1,-1]
-    print 'h(z*)',hz[1,-1]
-    print 'omega_mat',omega_mat
-    # Calculate the physical dark energy density Omega_phi*h0**2 defined as
+    # Calculate the physical dark energy density Omega_phi(z)*h0**2 defined as
     # whatever is needed to make up h(z) after accounting for matter and radiation.
     # The result might be negative.
-    num = hz**2 - zp1_cubed*(omega_mat[...,np.newaxis] + zp1*omega_rad)
-    which = np.array([0,7,18])
-    print 'z',z[which]
-    print 'DH(z)',DH[1,which]
-    print 'h(z)',hz[1,which]
-    print 'num',num[1,which]
-    denom = hz[...,0]**2 - omega_mat - omega_rad
-    return num/denom[...,np.newaxis]
+    omega_phi = hz**2 - zp1_cubed*(omega_mat[...,np.newaxis] + zp1*omega_rad)
+    # Normalize to the physical dark energy density today Omega_phi(0)*h0**2.
+    omega_phi_fraction = omega_phi/omega_phi[...,0]
+    return omega_phi_fraction
 
 def fiducial_DH(z):
     """Evaluates the fiducial cosmology distance function DH(z).

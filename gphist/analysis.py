@@ -95,7 +95,7 @@ def get_permutations(n):
 		mask[iperm] = np.bitwise_and(iperm,bits) > 0
 	return mask
 
-def calculate_distance_histograms(DH,DH0,DA,DA0,nlp,num_bins,min_value,max_value):
+def calculate_histograms(DH,DH0,DA,DA0,nlp,num_bins,min_value,max_value):
 	"""Build histograms of DH/DH0 and DA/DA0.
 
 	Calculate histograms for all permutations of posterior weightings.
