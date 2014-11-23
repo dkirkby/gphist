@@ -71,8 +71,8 @@ def main():
         #    1450.0/args.rsdrag,1.45/args.rsdrag,
         #    5300.0/args.rsdrag,5.3/args.rsdrag,0.,args.rsdrag),
 
-        # Local H0 measurement from Reis 2013.
-        gphist.posterior.LocalH0Posterior('H0',74.8,3.1),
+        # Local H0 measurement from Reis 2011 (http://dx.doi.org/10.1088/0004-637X/730/2/119)
+        gphist.posterior.LocalH0Posterior('H0',74.4,2.5),
 
         # BOSS LRG BAO from Anderson 2014.
         gphist.posterior.BAOPosterior('LRG',args.zLRG,20.74,0.69,14.95,0.21,-0.52,args.rsdrag),
