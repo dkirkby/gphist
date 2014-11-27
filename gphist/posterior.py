@@ -7,8 +7,7 @@ from abc import ABCMeta,abstractmethod
 import numpy as np
 import numpy.linalg
 import scipy.interpolate
-
-import gphist # for clight_km_per_sec
+import astropy.constants
 
 class GaussianPdf(object):
 	"""Represents a multi-dimensional Gaussian probability density function.
@@ -168,7 +167,8 @@ class LocalH0Posterior(Posterior):
 		Returns:
 			ndarray: Array of -log(prob) values calculated at each input value.
 		"""
-		return self.pdf.get_nlp(gphist.clight_km_per_sec/DHz)
+		clight_km_per_sec = astropy.constants.c.to('km/s').value
+		return self.pdf.get_nlp(clight_km_per_sec/DHz)
 
 class DHPosterior(Posterior):
 	"""Posterior constraint on DH(z).

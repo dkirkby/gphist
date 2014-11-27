@@ -2,8 +2,7 @@
 """
 
 import numpy as np
-
-import gphist # for clight_km_per_sec
+import astropy.constants
 
 def convert_DC_to_DA(DH,DC,omega_k):
     """Applies curvature to convert DC(z) into DA(z).
@@ -44,7 +43,8 @@ def get_acceleration(z,DH):
     Raises:
         ValueError: Arrays z and DH do not have the same last dimension.
     """
-    return gphist.clight_km_per_sec/DH/(1+z)
+    clight_km_per_sec = astropy.constants.c.to('km/s').value
+    return clight_km_per_sec/DH/(1+z)
 
 def get_dark_energy_fraction(z,DH):
     """Calculates the dark energy fraction Omega_phi(z)/Omega_phi(0).
@@ -71,7 +71,8 @@ def get_dark_energy_fraction(z,DH):
     # massless neutrinos with N_nu = 3.046 and T_cmb = 2.7255 K.
     omega_rad = 4.18377e-5
     # Calculate h(z) = H(z)/(100 km/s/Mpc).
-    hz = gphist.clight_km_per_sec/DH/100.
+    clight_km_per_sec = astropy.constants.c.to('km/s').value
+    hz = clight_km_per_sec/DH/100.
     # Calculate the physical matter density Omega_mat*h0**2 assuming that only
     # matter and radiation contribute at zmax.
     omega_mat = hz[...,-1]**2/zp1_cubed[-1] - omega_rad*zp1[-1]
