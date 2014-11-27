@@ -14,6 +14,7 @@ Programs
 .. toctree::
 	:maxdepth: 2
 
+	install
 	infer
 	combine
 	plot
