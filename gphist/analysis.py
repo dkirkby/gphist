@@ -102,9 +102,9 @@ def calculate_histograms(DH,DH0,DA,DA0,nlp,num_bins,min_value,max_value):
 	The undefined ratio DA(z=0)/DA0(z=0) is never evaluated.
 
 	Args:
-		DH(ndarray): Array of shape (nz,nsamples) of DH(z) values to use.
+		DH(ndarray): Array of shape (nsamples,nz) of DH(z) values to use.
 		DH0(ndarray): Array of shape (nz,) used to normalize each DH(z).
-		DA(ndarray): Array of shape (nz,nsamples) of DA(z) values to use.
+		DA(ndarray): Array of shape (nsamples,nz) of DA(z) values to use.
 		DA0(ndarray): Array of shape (nz,) used to normalize each DA(z).
 		nlp(ndarray): Array of shape (npost,nsamples) containing the nlp
 			posterior weights to use.
@@ -126,15 +126,15 @@ def calculate_histograms(DH,DH0,DA,DA0,nlp,num_bins,min_value,max_value):
 		AssertionError: Unexpected sizes of DH0,DA0,DA,nlp.
 	"""
 	npost = len(nlp)
-	nz,nsamples = DH.shape
+	nsamples,nz = DH.shape
 	# Check sizes.
 	assert DH0.shape == (nz,),'Unexpected DH0.shape'
 	assert DA0.shape == (nz,),'Unexpected DA0.shape'
-	assert DA.shape == (nz,nsamples),'Unexpected DA.shape'
+	assert DA.shape == (nsamples,nz),'Unexpected DA.shape'
 	assert nlp.shape == (npost,nsamples),'Unexpected nlp.shape'
-	# Rescale DH,DA by DH0,DA0.
-	DH_ratio = DH/DH0[:,np.newaxis]
-	DA_ratio = DA[1:]/DA0[1:,np.newaxis]
+	# Rescale DH,DA by DH0,DA0. We drop the z=0 bin for the DA ratio to avoid 0/0.
+	DH_ratio = DH/DH0
+	DA_ratio = DA[:,1:]/DA0[1:]
 	# Initialize posterior permutations.
 	nperm = 2**npost
 	perms = get_permutations(npost)
@@ -143,7 +143,7 @@ def calculate_histograms(DH,DH0,DA,DA0,nlp,num_bins,min_value,max_value):
 	DA_hist = np.empty((nperm,nz-1,num_bins+2))
 	# Calculate bin indices for DH/DH0. We process DH/DH0 and DA/DA0 separately
 	# to avoid allocating two large index arrays at the same time.
-	bin_indices = get_bin_indices(DH_ratio,num_bins,min_value,max_value)
+	bin_indices = get_bin_indices(DH_ratio.T,num_bins,min_value,max_value)
 	# Loop over permutations.
 	for iperm,perm in enumerate(perms):
 		# Calculate weights for this permutation.
@@ -154,7 +154,7 @@ def calculate_histograms(DH,DH0,DA,DA0,nlp,num_bins,min_value,max_value):
 			DH_hist[iperm,ihist] = np.bincount(
 				bin_indices[ihist],weights=perm_weights,minlength=num_bins+2)
 	# Calculate bin indices for DA/DA0, replacing the large array allocated above.
-	bin_indices = get_bin_indices(DA_ratio,num_bins,min_value,max_value)
+	bin_indices = get_bin_indices(DA_ratio.T,num_bins,min_value,max_value)
 	# Loop over permutations.
 	for iperm,perm in enumerate(perms):
 		# Calculate weights for this permutation.

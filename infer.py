@@ -168,8 +168,7 @@ def main():
             # Downsample distance functions in preparation for histogramming.
             i_ds = evol.downsampled_indices
             z_ds,DH0_ds,DA0_ds = evol.zvalues[i_ds],DH0[i_ds],DA0[i_ds]
-            # Transpose so that values to histogram are consecutive.
-            DH_ds,DA_ds = DH[:,i_ds].T,DA[:,i_ds].T
+            DH_ds,DA_ds = DH[:,i_ds],DA[:,i_ds]
 
             # Build histograms of DH/DH0 and DA/DA0 for each redshift slice and
             # all permutations of posteriors.
