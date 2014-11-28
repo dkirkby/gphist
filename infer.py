@@ -128,8 +128,11 @@ def main():
         DH0 = model.DH0
         DA0 = model.DC0 # assuming zero curvature
 
-        # Initialize a unique random state.
-        random_state = np.random.RandomState([args.seed,hyper_offset])
+        # Initialize a reproducible random state for this offset. We use independent
+        # states for sampling the prior and selecting random realizations so that these
+        # are independently reproducible.
+        sampling_random_state = np.random.RandomState([args.seed,hyper_offset])
+        realization_random_state = np.random.RandomState([args.seed,hyper_offset])
 
         # Break the calculation into cycles to limit the memory consumption.
         combined_DH_hist = None
@@ -140,7 +143,8 @@ def main():
             samples_remaining -= samples_per_cycle
 
             # Generate samples from the prior.
-            samples = prior.generate_samples(samples_per_cycle,evol.svalues,random_state)
+            samples = prior.generate_samples(samples_per_cycle,evol.svalues,
+                sampling_random_state)
 
             # Convert each sample into a corresponding tabulated DH(z).
             DH = model.get_DH(samples)
@@ -163,7 +167,7 @@ def main():
             # all cycles and then downsample.
             if combined_DH_hist is None:
                 DH_realizations,DA_realizations = gphist.analysis.select_random_realizations(
-                    DH,DA,posteriors_nlp,args.num_save)
+                    DH,DA,posteriors_nlp,args.num_save,realization_random_state)
 
             # Downsample distance functions in preparation for histogramming.
             i_ds = evol.downsampled_indices

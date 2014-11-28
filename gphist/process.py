@@ -2,7 +2,6 @@
 """
 
 import numpy as np
-import numpy.random
 
 class HyperParameterLogGrid(object):
 	"""Defines a log-spaced grid of hyperparameter values.

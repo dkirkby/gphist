@@ -231,7 +231,8 @@ def calculate_confidence_limits(histograms,confidence_levels,bin_range):
 		limits[:,ihist] = quantiles(hist,quantile_levels,bin_range)
 	return limits
 
-def select_random_realizations(DH,DA,nlp,num_realizations,print_warnings=True):
+def select_random_realizations(DH,DA,nlp,num_realizations,
+	random_state=None,print_warnings=True):
 	"""Select random realizations of generated expansion histories.
 
 	Args:
@@ -240,6 +241,8 @@ def select_random_realizations(DH,DA,nlp,num_realizations,print_warnings=True):
 		nlp(ndarray): Array of shape (npost,nsamples) containing the nlp
 			posterior weights to use.
 		num_realizations(int): Number of random rows to return.
+		random_state(numpy.RandomState): Random state to use, or use default
+			state if None.
 		print_warnings(bool): Print a warning for any posterior permutation
 			whose selected realizations include repeats.
 
@@ -262,8 +265,10 @@ def select_random_realizations(DH,DA,nlp,num_realizations,print_warnings=True):
 	nperm = 2**npost
 	DH_realizations = np.empty((nperm,num_realizations,nz))
 	DA_realizations = np.empty((nperm,num_realizations,nz))
+	# Fall back to the default random generator if necessary.
+	generator = random_state if random_state else np.random
 	# Generate a random CDF value for each realization.
-	random_levels = np.random.uniform(low=0.,high=1.,size=num_realizations)
+	random_levels = generator.uniform(low=0.,high=1.,size=num_realizations)
 	# Loop over posterior permutations.
 	perms = get_permutations(npost)
 	for iperm,perm in enumerate(perms):
