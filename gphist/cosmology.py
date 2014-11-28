@@ -1,6 +1,7 @@
 """Homegenous cosmology.
 """
 
+import numpy as np
 import astropy.constants as const
 import astropy.units as unit
 import astropy.cosmology
@@ -91,5 +92,5 @@ def get_dark_energy_evolution(z,DH):
     # Calculate the physical dark energy density Omega_phi(z)*h0**2 defined as
     # whatever is needed to make up h(z) after accounting for matter and radiation.
     # The result might be negative.
-    omega_phi = (hz**2 - omega_radiation) - omega_mat[...,np.newaxis]*zp1_cubed
+    omega_phi = (h_of_z**2 - omega_radiation) - omega_matter[...,np.newaxis]*zp1_cubed
     return omega_phi

@@ -50,6 +50,8 @@ def main():
         help = 'redshift of Lyman-alpha BAO constraint')
     parser.add_argument('--rsdrag', type = float, default = 147.36,
         help = 'nominal sound horizon rs(zdrag) at the drag epoch in Mpc')
+    parser.add_argument('--dark-energy', action= 'store_true',
+        help = 'calculate dark energy expansion history for each realization')
     parser.add_argument('--num-bins', type = int, default = 1000,
         help = 'number of bins to use for histogramming DH/DH0 and DA/DA0')
     parser.add_argument('--min-ratio', type = float, default = 0.5,
@@ -173,6 +175,10 @@ def main():
             i_ds = evol.downsampled_indices
             z_ds,DH0_ds,DA0_ds = evol.zvalues[i_ds],DH0[i_ds],DA0[i_ds]
             DH_ds,DA_ds = DH[:,i_ds],DA[:,i_ds]
+
+            # Calculate dark energy evolution, if requested.
+            if args.dark_energy:
+                omega_phi = gphist.cosmology.get_dark_energy_evolution(z_ds,DH_ds)
 
             # Build histograms of DH/DH0 and DA/DA0 for each redshift slice and
             # all permutations of posteriors.
