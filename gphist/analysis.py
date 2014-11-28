@@ -141,29 +141,23 @@ def calculate_histograms(DH,DH0,DA,DA0,nlp,num_bins,min_value,max_value):
 	# Allocate output arrays for the histogram bin values.
 	DH_hist = np.empty((nperm,nz,num_bins+2))
 	DA_hist = np.empty((nperm,nz-1,num_bins+2))
-	# Calculate bin indices for DH/DH0. We process DH/DH0 and DA/DA0 separately
-	# to avoid allocating two large index arrays at the same time.
-	bin_indices = get_bin_indices(DH_ratio.T,num_bins,min_value,max_value)
+	# Calculate bin indices.
+	DH_bin_indices = get_bin_indices(DH_ratio.T,num_bins,min_value,max_value)
+	DA_bin_indices = get_bin_indices(DA_ratio.T,num_bins,min_value,max_value)
 	# Loop over permutations.
 	for iperm,perm in enumerate(perms):
 		# Calculate weights for this permutation.
 		perm_nlp = np.sum(nlp[perm],axis=0)  # Returns zero when perm entries all False.
 		perm_weights = np.exp(-perm_nlp)
-		# Build histograms of DH/DH0 for each redshift slice.
 		for ihist in range(nz):
+			# Build histograms of DH/DH0 for each redshift slice.
 			DH_hist[iperm,ihist] = np.bincount(
-				bin_indices[ihist],weights=perm_weights,minlength=num_bins+2)
-	# Calculate bin indices for DA/DA0, replacing the large array allocated above.
-	bin_indices = get_bin_indices(DA_ratio.T,num_bins,min_value,max_value)
-	# Loop over permutations.
-	for iperm,perm in enumerate(perms):
-		# Calculate weights for this permutation.
-		perm_nlp = np.sum(nlp[perm],axis=0)  # Returns zero when perm entries all False.
-		perm_weights = np.exp(-perm_nlp)
-		# Build histograms of DA/DA0 for each redshift slice.
-		for ihist in range(nz-1):
-			DA_hist[iperm,ihist] = np.bincount(
-				bin_indices[ihist],weights=perm_weights,minlength=num_bins+2)
+				DH_bin_indices[ihist],weights=perm_weights,minlength=num_bins+2)
+			# Build histograms of DA/DA0 for each redshift slice (skipping z=0).
+			if ihist == 0:
+				continue
+			DA_hist[iperm,ihist-1] = np.bincount(
+				DA_bin_indices[ihist-1],weights=perm_weights,minlength=num_bins+2)
 	return DH_hist,DA_hist
 
 def quantiles(histogram,quantile_levels,bin_range,threshold=1e-8):
