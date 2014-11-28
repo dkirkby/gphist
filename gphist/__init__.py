@@ -3,6 +3,7 @@
 
 import process
 import evolution
+import cosmology
 import distance
 import posterior
 import analysis

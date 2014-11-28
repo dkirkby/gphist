@@ -7,6 +7,7 @@ Submodules
 .. toctree::
 
    gphist.analysis
+   gphist.cosmology
    gphist.distance
    gphist.evolution
    gphist.posterior

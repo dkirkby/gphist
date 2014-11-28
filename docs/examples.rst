@@ -1,9 +1,19 @@
 examples
 ========
 
+Quick Demo
+----------
+
 Run inference with fixed hyperparameters for quick demonstration::
 
 	./infer.py --hyper-h 0.1 --hyper-sigma 0.02 --num-samples 100000 --output demo
+
+Plot the results with only a CMB posterior applied::
+
+	./plot.py --input demo.0 --posterior CMB --show --dark-energy
+
+Full Calculation
+----------------
 
 Run inferences on a grid of hyperparameter values::
 
