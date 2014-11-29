@@ -176,14 +176,16 @@ def main():
             z_ds,DH0_ds,DA0_ds = evol.zvalues[i_ds],DH0[i_ds],DA0[i_ds]
             DH_ds,DA_ds = DH[:,i_ds],DA[:,i_ds]
 
-            # Calculate dark energy evolution, if requested.
+            # Calculate dark energy evolution on the downsampled grid, if requested.
             if args.dark_energy:
-                omega_phi = gphist.cosmology.get_dark_energy_evolution(z_ds,DH_ds)
+                de_evol = gphist.cosmology.get_dark_energy_evolution(z_ds,DH_ds)
+            else:
+                de_evol = None
 
-            # Build histograms of DH/DH0 and DA/DA0 for each redshift slice and
+            # Build histograms for each downsampled redshift slice and for
             # all permutations of posteriors.
-            DH_hist,DA_hist = gphist.analysis.calculate_histograms(
-                DH_ds,DH0_ds,DA_ds,DA0_ds,posteriors_nlp,
+            DH_hist,DA_hist,de_hist = gphist.analysis.calculate_histograms(
+                DH_ds,DH0_ds,DA_ds,DA0_ds,de_evol,posteriors_nlp,
                 args.num_bins,args.min_ratio,args.max_ratio)
 
             # Combine with the results of any previous cycles.

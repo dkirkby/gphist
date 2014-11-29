@@ -95,10 +95,9 @@ def get_permutations(n):
 		mask[iperm] = np.bitwise_and(iperm,bits) > 0
 	return mask
 
-def calculate_histograms(DH,DH0,DA,DA0,nlp,num_bins,min_value,max_value):
-	"""Build histograms of DH/DH0 and DA/DA0.
+def calculate_histograms(DH,DH0,DA,DA0,de_evol,nlp,num_bins,min_value,max_value):
+	"""Build histograms for all permutations of posterior weightings.
 
-	Calculate histograms for all permutations of posterior weightings.
 	The undefined ratio DA(z=0)/DA0(z=0) is never evaluated.
 
 	Args:
@@ -106,6 +105,8 @@ def calculate_histograms(DH,DH0,DA,DA0,nlp,num_bins,min_value,max_value):
 		DH0(ndarray): Array of shape (nz,) used to normalize each DH(z).
 		DA(ndarray): Array of shape (nsamples,nz) of DA(z) values to use.
 		DA0(ndarray): Array of shape (nz,) used to normalize each DA(z).
+		de_evol(ndarray): Array of shape (nde,nsamples,nz) of nde dark-energy
+			evolution histories, or None if they have not been calculated.
 		nlp(ndarray): Array of shape (npost,nsamples) containing the nlp
 			posterior weights to use.
 		num_bins(int): Number of equally spaced bins to use for each histogram.
@@ -127,6 +128,7 @@ def calculate_histograms(DH,DH0,DA,DA0,nlp,num_bins,min_value,max_value):
 	"""
 	npost = len(nlp)
 	nsamples,nz = DH.shape
+	nde = len(de_evol) if de_evol is None else 0
 	# Check sizes.
 	assert DH0.shape == (nz,),'Unexpected DH0.shape'
 	assert DA0.shape == (nz,),'Unexpected DA0.shape'
@@ -141,9 +143,12 @@ def calculate_histograms(DH,DH0,DA,DA0,nlp,num_bins,min_value,max_value):
 	# Allocate output arrays for the histogram bin values.
 	DH_hist = np.empty((nperm,nz,num_bins+2))
 	DA_hist = np.empty((nperm,nz-1,num_bins+2))
+	de_hist = np.empty((nde,nperm,nz,num_bins+2)) if de_evol is None else None
 	# Calculate bin indices.
 	DH_bin_indices = get_bin_indices(DH_ratio.T,num_bins,min_value,max_value)
 	DA_bin_indices = get_bin_indices(DA_ratio.T,num_bins,min_value,max_value)
+	if de_evol is not None:
+		pass
 	# Loop over permutations.
 	for iperm,perm in enumerate(perms):
 		# Calculate weights for this permutation.
@@ -158,7 +163,7 @@ def calculate_histograms(DH,DH0,DA,DA0,nlp,num_bins,min_value,max_value):
 				continue
 			DA_hist[iperm,ihist-1] = np.bincount(
 				DA_bin_indices[ihist-1],weights=perm_weights,minlength=num_bins+2)
-	return DH_hist,DA_hist
+	return DH_hist,DA_hist,de_hist
 
 def quantiles(histogram,quantile_levels,bin_range,threshold=1e-8):
 	"""Calculate quantiles of a histogram.
