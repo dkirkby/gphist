@@ -137,7 +137,7 @@ def main():
         realization_random_state = np.random.RandomState([args.seed,hyper_offset])
 
         # Break the calculation into cycles to limit the memory consumption.
-        combined_DH_hist = None
+        combined_DH_hist,combined_DA_hist,combined_de_hist = None,None,None
         samples_remaining = args.num_samples
         while samples_remaining > 0:
 
@@ -177,6 +177,7 @@ def main():
             DH_ds,DA_ds = DH[:,i_ds],DA[:,i_ds]
 
             # Calculate dark energy evolution on the downsampled grid, if requested.
+            de0_evol = gphist.cosmology.get_dark_energy_evolution(z_ds,DH0_ds)
             if args.dark_energy:
                 de_evol = gphist.cosmology.get_dark_energy_evolution(z_ds,DH_ds)
             else:
@@ -185,16 +186,20 @@ def main():
             # Build histograms for each downsampled redshift slice and for
             # all permutations of posteriors.
             DH_hist,DA_hist,de_hist = gphist.analysis.calculate_histograms(
-                DH_ds,DH0_ds,DA_ds,DA0_ds,de_evol,posteriors_nlp,
+                DH_ds,DH0_ds,DA_ds,DA0_ds,de_evol,de0_evol,posteriors_nlp,
                 args.num_bins,args.min_ratio,args.max_ratio)
 
             # Combine with the results of any previous cycles.
             if combined_DH_hist is None:
                 combined_DH_hist = DH_hist
                 combined_DA_hist = DA_hist
+                if args.dark_energy:
+                    combined_de_hist = de_hist
             else:
                 combined_DH_hist += DH_hist
                 combined_DA_hist += DA_hist
+                if args.dark_energy:
+                    combined_de_hist += de_hist
 
             print 'Finished cycle with %5.2f%% samples remaining.' % (
                 100.*samples_remaining/args.num_samples)
@@ -209,9 +214,8 @@ def main():
                 args.hyper_sigma_min,args.hyper_sigma_max])
             output_name = '%s.%d.npz' % (args.output,hyper_offset)
             np.savez(output_name,
-                DH_hist=combined_DH_hist,DA_hist=combined_DA_hist,
-                DH0=DH0_ds,DA0=DA0_ds,zvalues=z_ds,
-                DH0_full=DH0,DA0_full=DA0,zvalues_full=evol.zvalues,
+                zvalues=z_ds,DH_hist=combined_DH_hist,DA_hist=combined_DA_hist,
+                de_hist=combined_de_hist,DH0=DH0_ds,DA0=DA0_ds,de0=de0_evol,
                 fixed_options=fixed_options,variable_options=variable_options,
                 bin_range=bin_range,hyper_range=hyper_range,
                 DH_realizations=DH_realizations,DA_realizations=DA_realizations,

@@ -163,9 +163,9 @@ def main():
             plt.xlim([1.,1+np.max(zvalues)])
             plt.fill_between(1+zvalues,DH_ratio_limits[0],DH_ratio_limits[-1],
                 facecolor='blue',alpha=0.25)
-            plt.plot(1+zvalues,DH_ratio_limits[0],'b--')
+            plt.plot(1+zvalues,DH_ratio_limits[0],'b:')
             plt.plot(1+zvalues,DH_ratio_limits[1],'b-')
-            plt.plot(1+zvalues,DH_ratio_limits[2],'b--')
+            plt.plot(1+zvalues,DH_ratio_limits[2],'b:')
             plt.xlabel(r'$1+z$')
             plt.ylabel(r'$D_H(z)/D_H^0(z)$')
 
@@ -175,9 +175,9 @@ def main():
             plt.xlim([1.,1+np.max(zvalues)])
             plt.fill_between(1+zvalues[1:],DA_ratio_limits[0],DA_ratio_limits[-1],
                 facecolor='blue',alpha=0.25)
-            plt.plot(1+zvalues[1:],DA_ratio_limits[0],'b--')
+            plt.plot(1+zvalues[1:],DA_ratio_limits[0],'b:')
             plt.plot(1+zvalues[1:],DA_ratio_limits[1],'b-')
-            plt.plot(1+zvalues[1:],DA_ratio_limits[2],'b--')
+            plt.plot(1+zvalues[1:],DA_ratio_limits[2],'b:')
             plt.xlabel(r'$1+z$')
             plt.ylabel(r'$D_A(z)/D_A^0(z)$')
 
@@ -192,9 +192,10 @@ def main():
             plt.xlim([0.,args.zmax])
             plt.fill_between(zvalues[:iend],1e-3*DH_limits[0,:iend],1e-3*DH_limits[-1,:iend],
                 facecolor='blue',alpha=0.25)
-            plt.plot(zvalues[:iend],1e-3*DH_limits[0,:iend],'b--')
+            plt.plot(zvalues[:iend],1e-3*DH_limits[0,:iend],'b:')
             plt.plot(zvalues[:iend],1e-3*DH_limits[1,:iend],'b-')
-            plt.plot(zvalues[:iend],1e-3*DH_limits[2,:iend],'b--')
+            plt.plot(zvalues[:iend],1e-3*DH_limits[2,:iend],'b:')
+            plt.plot(zvalues[:iend],1e-3*DH0[:iend],'g--')
             plt.xlabel(r'$z$')
             plt.ylabel(r'$D_H(z)$ (Gpc)')
 
@@ -204,9 +205,10 @@ def main():
             plt.xlim([0.,args.zmax])
             plt.fill_between(zvalues[:iend],1e-3*DA_limits[0,:iend],1e-3*DA_limits[-1,:iend],
                 facecolor='blue',alpha=0.25)
-            plt.plot(zvalues[:iend],1e-3*DA_limits[0,:iend],'b--')
+            plt.plot(zvalues[:iend],1e-3*DA_limits[0,:iend],'b:')
             plt.plot(zvalues[:iend],1e-3*DA_limits[1,:iend],'b-')
-            plt.plot(zvalues[:iend],1e-3*DA_limits[2,:iend],'b--')
+            plt.plot(zvalues[:iend],1e-3*DA_limits[2,:iend],'b:')
+            plt.plot(zvalues[:iend],1e-3*DA0[:iend],'g--')
             plt.xlabel(r'$z$')
             plt.ylabel(r'$D_A(z)$ (Gpc)')
 
@@ -227,9 +229,9 @@ def main():
             plt.xlim([0.,args.zmax])
             plt.fill_between(zvalues[:iend],accel_limits[0,:iend],accel_limits[-1,:iend],
                 facecolor='blue',alpha=0.25)
-            plt.plot(zvalues[:iend],accel_limits[0,:iend],'b--')
+            plt.plot(zvalues[:iend],accel_limits[0,:iend],'b:')
             plt.plot(zvalues[:iend],accel_limits[1,:iend],'b-')
-            plt.plot(zvalues[:iend],accel_limits[2,:iend],'b--')
+            plt.plot(zvalues[:iend],accel_limits[2,:iend],'b:')
             plt.xlabel(r'$z$')
             plt.ylabel(r'$H(z)/(1+z)$ (Mpc)')
 
@@ -239,9 +241,9 @@ def main():
             plt.xlim([0.,args.zmax])
             plt.fill_between(zvalues[:iend],defrac_limits[0,:iend],defrac_limits[-1,:iend],
                 facecolor='blue',alpha=0.25)
-            plt.plot(zvalues[:iend],defrac_limits[0,:iend],'b--')
+            plt.plot(zvalues[:iend],defrac_limits[0,:iend],'b:')
             plt.plot(zvalues[:iend],defrac_limits[1,:iend],'b-')
-            plt.plot(zvalues[:iend],defrac_limits[2,:iend],'b--')
+            plt.plot(zvalues[:iend],defrac_limits[2,:iend],'b:')
             plt.xlabel(r'$z$')
             plt.ylabel(r'$\Omega_{\phi}(z)/\Omega_{\phi} - 1$')
 

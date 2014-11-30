@@ -80,8 +80,7 @@ def get_dark_energy_evolution(z,DH):
     Returns:
         ndarray: Array of omega_phi(z) values.
     """
-    nsamples,nz = DH.shape
-    de_evol = np.empty((4,nsamples,nz))
+    de_evol = np.empty(shape=(4,)+DH.shape)
     zp1 = 1+z
     zp1_cubed = zp1**3
     # Calculate h(z) = H(z)/(100 km/s/Mpc).

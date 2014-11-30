@@ -95,7 +95,7 @@ def get_permutations(n):
 		mask[iperm] = np.bitwise_and(iperm,bits) > 0
 	return mask
 
-def calculate_histograms(DH,DH0,DA,DA0,de_evol,nlp,num_bins,min_value,max_value):
+def calculate_histograms(DH,DH0,DA,DA0,de_evol,de0_evol,nlp,num_bins,min_value,max_value):
 	"""Build histograms for all permutations of posterior weightings.
 
 	The undefined ratio DA(z=0)/DA0(z=0) is never evaluated.
@@ -107,6 +107,8 @@ def calculate_histograms(DH,DH0,DA,DA0,de_evol,nlp,num_bins,min_value,max_value)
 		DA0(ndarray): Array of shape (nz,) used to normalize each DA(z).
 		de_evol(ndarray): Array of shape (nde,nsamples,nz) of nde dark-energy
 			evolution histories, or None if they have not been calculated.
+		de0_evol(ndarray): Array of shape (nde,nz) of nde fiducial dark-energy
+			evolution histories, used for normalization.
 		nlp(ndarray): Array of shape (npost,nsamples) containing the nlp
 			posterior weights to use.
 		num_bins(int): Number of equally spaced bins to use for each histogram.
@@ -115,24 +117,25 @@ def calculate_histograms(DH,DH0,DA,DA0,de_evol,nlp,num_bins,min_value,max_value)
 			overflow bin.
 
 	Returns:
-		tuple: Arrays of histograms for DH/DH0 and DA/DA0 with shapes
-			(nperm,nz,num_bins+2) and (nperm,nz-1,num_bins+2), respectively,
-			where nperm = 2**npost. There are no DA/DA0 histograms for z=0,
-			hence the nz vs nz-1 dimensions. The mapping between permutations
-			and the permutation index is given by the binary
-			representation of the index. For example, iperm = 5 = 2^0 + 2^2
-			combines posteriors 0 and 2.
+		tuple: Arrays of histograms for DH/DH0, DA/DA0, de_evol/de0_evol with shapes
+			(nperm,nz,num_bins+2), (nperm,nz-1,num_bins+2), (nde,nperm,nz,num_bins+2),
+			respectively, where nperm = 2**npost. There are no DA/DA0 histograms for z=0,
+			hence the nz vs nz-1 dimensions. The mapping between permutations and
+			the permutation index is given by the binary representation of the index.
+			For example, iperm = 5 = 2^0 + 2^2 combines posteriors 0 and 2.
 
 	Raises:
-		AssertionError: Unexpected sizes of DH0,DA0,DA,nlp.
+		AssertionError: Unexpected sizes of DH0,DA0,DA,de_evol,de0_evol,nlp.
 	"""
 	npost = len(nlp)
 	nsamples,nz = DH.shape
-	nde = len(de_evol) if de_evol is None else 0
+	nde = len(de0_evol)
 	# Check sizes.
 	assert DH0.shape == (nz,),'Unexpected DH0.shape'
 	assert DA0.shape == (nz,),'Unexpected DA0.shape'
 	assert DA.shape == (nsamples,nz),'Unexpected DA.shape'
+	assert de0_evol.shape == (nde,nz), 'Unexpected de0_evol shape'
+	assert de_evol is None or de_evol.shape == (nde,nsamples,nz), 'Unexpected de_evol shape'
 	assert nlp.shape == (npost,nsamples),'Unexpected nlp.shape'
 	# Rescale DH,DA by DH0,DA0. We drop the z=0 bin for the DA ratio to avoid 0/0.
 	DH_ratio = DH/DH0
