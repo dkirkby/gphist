@@ -44,7 +44,7 @@ def main():
         return -1
 
     # Do we have anything to plot?
-    num_plot_rows = args.full + args.zoom + args.dark_energy
+    num_plot_rows = args.full + args.zoom + 2*args.dark_energy
     if num_plot_rows == 0 and not args.nlp:
         print 'No plots selected.'
         return 0
@@ -65,8 +65,10 @@ def main():
     loaded = np.load(args.input + '.npz')
     DH_hist = loaded['DH_hist']
     DA_hist = loaded['DA_hist']
+    de_hist = loaded['de_hist']
     DH0 = loaded['DH0']
     DA0 = loaded['DA0']
+    de0 = loaded['de0']
     zvalues = loaded['zvalues']
     fixed_options = loaded['fixed_options']
     bin_range = loaded['bin_range']
@@ -217,11 +219,9 @@ def main():
         # Plot dark-energy diagnostics up to zmax.
         if args.dark_energy:
 
+            '''
             # Calculate the acceleration H(z)/(1+z).
             accel_limits = gphist.distance.get_acceleration(zvalues,DH_limits)
-
-            # Calculate the dark-energy fraction Omega_phi(z)/Omega_phi(0).
-            defrac_limits = gphist.distance.get_dark_energy_fraction(zvalues,DH_limits)-1
 
             plt.subplot(num_plot_rows,2,2*irow+1)
             plt.xscale('linear')
@@ -234,20 +234,30 @@ def main():
             plt.plot(zvalues[:iend],accel_limits[2,:iend],'b:')
             plt.xlabel(r'$z$')
             plt.ylabel(r'$H(z)/(1+z)$ (Mpc)')
+            '''
 
-            plt.subplot(num_plot_rows,2,2*irow+2)
-            plt.xscale('linear')
-            plt.grid(True)
-            plt.xlim([0.,args.zmax])
-            plt.fill_between(zvalues[:iend],defrac_limits[0,:iend],defrac_limits[-1,:iend],
-                facecolor='blue',alpha=0.25)
-            plt.plot(zvalues[:iend],defrac_limits[0,:iend],'b:')
-            plt.plot(zvalues[:iend],defrac_limits[1,:iend],'b-')
-            plt.plot(zvalues[:iend],defrac_limits[2,:iend],'b:')
-            plt.xlabel(r'$z$')
-            plt.ylabel(r'$\Omega_{\phi}(z)/\Omega_{\phi} - 1$')
+            de_labels = (r'$\omega_{\phi}(z)$',r'$\omega_{\phi}(z)/\omega_{\phi}(0)$',
+                r'$\omega_{\phi}(z)/h_0^2$',r'$\omega_{\phi}(z)/h(z)^2$')
 
-            irow += 1
+            for ide in range(4):
+
+                plt.subplot(num_plot_rows,2,2*irow+ide+1)
+                plt.xscale('linear')
+                plt.grid(True)
+                plt.xlim([0.,args.zmax])
+                plt.ylim([0.,None])
+                '''
+                plt.fill_between(zvalues[:iend],defrac_limits[0,:iend],defrac_limits[-1,:iend],
+                    facecolor='blue',alpha=0.25)
+                plt.plot(zvalues[:iend],defrac_limits[0,:iend],'b:')
+                plt.plot(zvalues[:iend],defrac_limits[1,:iend],'b-')
+                plt.plot(zvalues[:iend],defrac_limits[2,:iend],'b:')
+                '''
+                plt.plot(zvalues[:iend],de0[ide,:iend],'g--')
+                plt.xlabel(r'$z$')
+                plt.ylabel(de_labels[ide])
+
+            irow += 2
 
         if num_plot_rows > 0:
             if args.output:
