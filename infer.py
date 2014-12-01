@@ -81,11 +81,20 @@ def main():
 
         # BOSS Lya-Lya & QSO-Lya from Delubac 2014.
         gphist.posterior.BAOPosterior('Lya',args.zLya,9.15,1.22,36.46,0.20,-0.38,args.rsdrag),
-
-        # Extended CMB case from Shahab Nov-4 email.
-        gphist.posterior.CMBPosterior('CMB',args.zstar,0.1871433E+00,0.1238882E+02,
-            6.57448e-05,0.00461449,0.338313)
     ]
+
+    # The choice of CMB posterior depends on whether we are inferring the dark-energy evolution.
+    if args.dark_energy:
+        # This should be from a compressed w0-wa chain...
+        posteriors.append(
+            gphist.posterior.CMBPosterior('CMB',args.zstar,0.1921764E+00,0.1274139E+02,
+            2.2012293e-06,7.87634e-05,0.0030466538))
+    else:
+        # Extended CMB case from Shahab Nov-4 email.
+        posteriors.append(
+            gphist.posterior.CMBPosterior('CMB',args.zstar,0.1871433E+00,0.1238882E+02,
+            6.57448e-05,0.00461449,0.338313))
+
     posterior_names = np.array([p.name for p in posteriors])
     posterior_redshifts = np.array([p.zpost for p in posteriors])
 

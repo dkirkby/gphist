@@ -146,12 +146,15 @@ def calculate_histograms(DH,DH0,DA,DA0,de_evol,de0_evol,nlp,num_bins,min_value,m
 	# Allocate output arrays for the histogram bin values.
 	DH_hist = np.empty((nperm,nz,num_bins+2))
 	DA_hist = np.empty((nperm,nz-1,num_bins+2))
-	de_hist = np.empty((nde,nperm,nz,num_bins+2)) if de_evol is None else None
-	# Calculate bin indices.
+	de_hist = np.empty((nde,nperm,nz-1,num_bins+2)) if de_evol is not None else None
+	# Calculate bin indices (after swapping nsamples,nz axes).
 	DH_bin_indices = get_bin_indices(DH_ratio.T,num_bins,min_value,max_value)
 	DA_bin_indices = get_bin_indices(DA_ratio.T,num_bins,min_value,max_value)
 	if de_evol is not None:
-		pass
+		de_ratio = de_evol[:,:,:-1]/de0_evol[:,np.newaxis,:-1]
+		# Calculate bin indices (after swapping nsamples,nz axes).
+		de_bin_indices = get_bin_indices(np.swapaxes(de_ratio,1,2),
+			num_bins,min_value,max_value)
 	# Loop over permutations.
 	for iperm,perm in enumerate(perms):
 		# Calculate weights for this permutation.
@@ -162,10 +165,14 @@ def calculate_histograms(DH,DH0,DA,DA0,de_evol,de0_evol,nlp,num_bins,min_value,m
 			DH_hist[iperm,ihist] = np.bincount(
 				DH_bin_indices[ihist],weights=perm_weights,minlength=num_bins+2)
 			# Build histograms of DA/DA0 for each redshift slice (skipping z=0).
-			if ihist == 0:
-				continue
-			DA_hist[iperm,ihist-1] = np.bincount(
-				DA_bin_indices[ihist-1],weights=perm_weights,minlength=num_bins+2)
+			if ihist > 0:
+				DA_hist[iperm,ihist-1] = np.bincount(
+					DA_bin_indices[ihist-1],weights=perm_weights,minlength=num_bins+2)
+			# Build histograms of each dark-energy evolution variable (skipping zmax).
+			if de_evol is not None and ihist < nz-1:
+				for ide in range(nde):
+					de_hist[ide,iperm,ihist] = np.bincount(de_bin_indices[ide,ihist],
+						weights=perm_weights,minlength=num_bins+2)
 	return DH_hist,DA_hist,de_hist
 
 def quantiles(histogram,quantile_levels,bin_range,threshold=1e-8):

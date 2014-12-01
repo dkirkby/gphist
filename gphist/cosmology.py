@@ -92,7 +92,6 @@ def get_dark_energy_evolution(z,DH):
     # Calculate the physical matter density Omega_mat*h0**2 assuming that only
     # matter and radiation contribute at zmax.
     omega_radiation = get_omega_radiation(z)
-    print 'omega_radiation',omega_radiation
     omega_matter = (h_of_z[...,-1]**2 - omega_radiation[-1])/zp1_cubed[-1]
     # Calculate the physical dark energy density Omega_phi(z)*h0**2 defined as
     # whatever is needed to make up h(z) after accounting for matter and radiation.

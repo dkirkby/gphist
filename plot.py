@@ -82,6 +82,10 @@ def main():
         else:
             print 'Ignoring option --nlp since -log(P) values are not available.'
             args.nlp = False
+    # Check that dark energy evolution is available if plots are requested.
+    if args.dark_energy and de_hist is None:
+        print 'Input file is missing dark-energy evolution'
+        return -1
 
     # Initialize the posterior permutations.
     npost = len(posterior_names)
@@ -241,18 +245,20 @@ def main():
 
             for ide in range(4):
 
+                de_ratio_limits = gphist.analysis.calculate_confidence_limits(
+                    de_hist[ide,iperm,:iend],[args.level],bin_range)
+                de_limits = de_ratio_limits*de0[ide,:iend]
+
                 plt.subplot(num_plot_rows,2,2*irow+ide+1)
                 plt.xscale('linear')
                 plt.grid(True)
                 plt.xlim([0.,args.zmax])
-                plt.ylim([0.,None])
-                '''
-                plt.fill_between(zvalues[:iend],defrac_limits[0,:iend],defrac_limits[-1,:iend],
+                #plt.ylim([0.,None])
+                plt.fill_between(zvalues[:iend],de_limits[0],de_limits[-1],
                     facecolor='blue',alpha=0.25)
-                plt.plot(zvalues[:iend],defrac_limits[0,:iend],'b:')
-                plt.plot(zvalues[:iend],defrac_limits[1,:iend],'b-')
-                plt.plot(zvalues[:iend],defrac_limits[2,:iend],'b:')
-                '''
+                plt.plot(zvalues[:iend],de_limits[0],'b:')
+                plt.plot(zvalues[:iend],de_limits[1],'b-')
+                plt.plot(zvalues[:iend],de_limits[2],'b:')
                 plt.plot(zvalues[:iend],de0[ide,:iend],'g--')
                 plt.xlabel(r'$z$')
                 plt.ylabel(de_labels[ide])
