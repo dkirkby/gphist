@@ -98,7 +98,9 @@ def get_permutations(n):
 def calculate_histograms(DH,DH0,DA,DA0,de_evol,de0_evol,nlp,num_bins,min_value,max_value):
 	"""Build histograms for all permutations of posterior weightings.
 
-	The undefined ratio DA(z=0)/DA0(z=0) is never evaluated.
+	The undefined ratio DA(z=0)/DA0(z=0) is never evaluated. The binning args are only
+	used for histogramming DH/DH0 and DA/DA0.  The dark-energy binning is hard coded
+	for now.
 
 	Args:
 		DH(ndarray): Array of shape (nsamples,nz) of DH(z) values to use.
@@ -151,10 +153,14 @@ def calculate_histograms(DH,DH0,DA,DA0,de_evol,de0_evol,nlp,num_bins,min_value,m
 	DH_bin_indices = get_bin_indices(DH_ratio.T,num_bins,min_value,max_value)
 	DA_bin_indices = get_bin_indices(DA_ratio.T,num_bins,min_value,max_value)
 	if de_evol is not None:
-		de_ratio = de_evol[:,:,:-1]/de0_evol[:,np.newaxis,:-1]
-		# Calculate bin indices (after swapping nsamples,nz axes).
-		de_bin_indices = get_bin_indices(np.swapaxes(de_ratio,1,2),
-			num_bins,min_value,max_value)
+		# Calculate bin indices for the dark-energy evolution variables.
+		# Note that:
+		#  - We bin de_evol directly, instead of taking the ratio de_evol/de0_evol.
+		#  - We drop the last bin which is always zero, by construction.
+		#  - The nsamples,nz axes are swapped, as above, but .T is not sufficient here.
+		#  - The histogram range is hardcoded (for now).
+		de_bin_indices = get_bin_indices(np.swapaxes(de_evol[:,:,:-1],1,2),
+			num_bins,min_value=-10.,max_value=+10.)
 	# Loop over permutations.
 	for iperm,perm in enumerate(perms):
 		# Calculate weights for this permutation.

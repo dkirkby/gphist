@@ -10,7 +10,7 @@ Run inference with fixed hyperparameters for quick demonstration::
 
 Plot the results with only a CMB posterior applied::
 
-	./plot.py --input demo.0 --posterior CMB --show --dark-energy
+	./plot.py --input demo.0 --posterior CMB --show --zoom
 
 Full Calculation
 ----------------

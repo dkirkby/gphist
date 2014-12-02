@@ -220,7 +220,7 @@ def main():
 
             irow += 1
 
-        # Plot dark-energy diagnostics up to zmax.
+        # Plot dark-energy evolution up to zmax.
         if args.dark_energy:
 
             '''
@@ -245,9 +245,8 @@ def main():
 
             for ide in range(4):
 
-                de_ratio_limits = gphist.analysis.calculate_confidence_limits(
+                de_limits = gphist.analysis.calculate_confidence_limits(
                     de_hist[ide,iperm,:iend],[args.level],bin_range)
-                de_limits = de_ratio_limits*de0[ide,:iend]
 
                 plt.subplot(num_plot_rows,2,2*irow+ide+1)
                 plt.xscale('linear')
