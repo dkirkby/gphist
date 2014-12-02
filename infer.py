@@ -85,10 +85,10 @@ def main():
 
     # The choice of CMB posterior depends on whether we are inferring the dark-energy evolution.
     if args.dark_energy:
-        # This should be from a compressed w0-wa chain...
+        # CMB constraints from base_w public chain.
         posteriors.append(
-            gphist.posterior.CMBPosterior('CMB',args.zstar,0.1921764E+00,0.1274139E+02,
-            2.2012293e-06,7.87634e-05,0.0030466538))
+            gphist.posterior.CMBPosterior('CMB',args.zstar,0.191908,12.727515,
+            1.56e-06,5.861e-05,0.00241565))
     else:
         # Extended CMB case from Shahab Nov-4 email.
         posteriors.append(
