@@ -2,7 +2,6 @@
 """
 
 import numpy as np
-import scipy.interpolate
 import scipy.stats
 
 def get_delta_chisq(confidence_levels=(0.6827,0.9543,0.9973),num_dof=2):
@@ -181,25 +180,22 @@ def calculate_histograms(DH,DH0,DA,DA0,de_evol,de0_evol,nlp,num_bins,min_value,m
 						weights=perm_weights,minlength=num_bins+2)
 	return DH_hist,DA_hist,de_hist
 
-def quantiles(histogram,quantile_levels,bin_range,threshold=1e-8):
+def quantiles(histogram,quantile_levels,bin_range):
 	"""Calculate quantiles of a histogram.
 
 	The quantiles are estimated by inverse linear interpolation of the cummulative
-	histogram. It is probably possible to vectorize this algorithm over histograms
-	if there is a bottleneck here.
+	histogram.
 
 	Args:
 		histogram(ndarray): Array of nbins+2 histogram contents, with bins [0] and [-1]
 			containing under- and overflow contents, respectively.
-		quantile_levels(ndarray): Array of quantile levels to calculate. Must be in the
+		quantile_levels(ndarray): Array of nq quantile levels to calculate. Must be in the
 			range (0,1) but do not need to be sorted.
 		bin_range(ndarray): Array of length 2 containing the [min,max) range corresponding
 			to the histogram contents in bins [1:-1].
-		threshold(float): Any histogram bins whose normalized contents fall below this
-			threshold will be ignored, to minimize loss of precision in the interpolation.
 
 	Returns:
-		ndarray: Array of estimated abscissa values for each input level. Each value will
+		ndarray: Array of nq estimated abscissa values for each input level. Each value will
 			be in the range specified by bin_range. Any values that should be outside of
 			this range will be clipped.
 
@@ -208,21 +204,37 @@ def quantiles(histogram,quantile_levels,bin_range,threshold=1e-8):
 	"""
 	# Reconstruct the histogram binning.
 	num_bins = len(histogram)-2
-	min_value,max_value = bin_range # Raises ValueError if there are not exactly 2 values to unpack.
+	min_value,max_value = bin_range # Raises ValueError unless exactly 2 values to unpack.
 	bin_edges = np.linspace(min_value,max_value,num_bins+1,endpoint=True)
-	# Build the cummulative distribution function, including the under/overflow bins.
+	# Build the cummulative normalized distribution function, including the under/overflow
+	# bins, so that cdf[i] is the normalized histogram integral up to bin_edges[i] for
+	# 0 <= i <= num_bins, and cdf[num_bins+1] = cdf[-1] = 1.0.
 	cdf = np.cumsum(histogram)
 	cdf /= cdf[-1]
-	# Skip almost empty bins so that CDF values are increasing for inverse interpolation.
-	use = np.diff(cdf) > threshold
-	use[0] = True
-	# Linearly interpolate CDF levels to estimate the corresponding bin values.
-	inv_cdf = scipy.interpolate.InterpolatedUnivariateSpline(
-		cdf[use[:-1]],bin_edges[use[:-1]],k=1)
-	levels = inv_cdf(quantile_levels)
-	# Perform clipping for levels outside our interpolation range.
-	levels[quantile_levels < cdf[0]] = min_value
-	levels[quantile_levels >= cdf[-2]] = max_value
+	# Loop over quantile levels.
+	levels = np.empty_like(quantile_levels)
+	for ilevel,qlevel in enumerate(quantile_levels):
+		if qlevel < cdf[0]:
+			# Requested level is below min_value.
+			levels[ilevel] = min_value
+		elif qlevel >= cdf[num_bins]:
+			# Requested level is above max_value.
+			levels[ilevel] = max_value
+		elif np.any(cdf == qlevel):
+			# Found at least one exact match in CDF, so use the first one.
+			levels[ilevel] = bin_edges[np.argmax(cdf == qlevel)]
+		else:
+			# Find the first bin index ihi where cdf[ihi] > qlevel.
+			ihi = np.argmax(cdf > qlevel)
+			# The last bin index ilo where cdf[ilo] < qlevel is now given by ihi-1.
+			ilo = ihi-1
+			# Are the bracketing CDF values sufficiently different for linear interpolation?
+			dcdf = cdf[ihi] - cdf[ilo]
+			if dcdf > 1e-6:
+				ratio = (qlevel-cdf[ilo])/dcdf
+				levels[ilevel] = bin_edges[ilo] + ratio*(bin_edges[ihi] - bin_edges[ilo])
+			else:
+				levels[ilevel] = 0.5*(bin_edges[ihi] + bin_edges[ilo])
 	return levels
 
 def calculate_confidence_limits(histograms,confidence_levels,bin_range):
