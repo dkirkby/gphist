@@ -35,11 +35,13 @@ def main():
         loaded = np.load(input_file)
         print 'Loaded',input_file
         if index == 0:
+            zvalues = loaded['zvalues']
             DH_hist = loaded['DH_hist']
             DA_hist = loaded['DA_hist']
-            zvalues = loaded['zvalues']
+            de_hist = loaded['de_hist']
             DH0 = loaded['DH0']
             DA0 = loaded['DA0']
+            de0 = loaded['de0']
             fixed_options = loaded['fixed_options']
             bin_range = loaded['bin_range']
             hyper_range = loaded['hyper_range']
@@ -79,9 +81,6 @@ def main():
             DA_hist += loaded['DA_hist']
         
         # Always load these arrays.
-        zvalues_full = loaded['zvalues_full']
-        DH0_full = loaded['DH0_full']
-        DA0_full = loaded['DA0_full']
         DH_realizations = loaded['DH_realizations']
         DA_realizations = loaded['DA_realizations']
         variable_options = loaded['variable_options']
@@ -106,8 +105,8 @@ def main():
 
     if args.output:
         output_name = '%s.npz' % args.output
-        # Relative to the infer.py output format, we drop arrays whose binning
-        # varies between inputs (*_full and *_realizations), and add hyper_nlp.
+        # Relative to the infer.py output format, we drop the variable_options and
+        # *_realizations arrays, and add hyper_nlp.
         np.savez(output_name,
             DH_hist=DH_hist,DA_hist=DA_hist,DH0=DH0,DA0=DA0,zvalues=zvalues,
             fixed_options=fixed_options,bin_range=bin_range,hyper_range=hyper_range,
