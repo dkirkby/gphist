@@ -108,9 +108,9 @@ def main():
         # Relative to the infer.py output format, we drop the variable_options and
         # *_realizations arrays, and add hyper_nlp.
         np.savez(output_name,
-            DH_hist=DH_hist,DA_hist=DA_hist,DH0=DH0,DA0=DA0,zvalues=zvalues,
-            fixed_options=fixed_options,bin_range=bin_range,hyper_range=hyper_range,
-            posterior_names=posterior_names,hyper_nlp=hyper_nlp)
+            zvalues=zvalues,DH_hist=DH_hist,DA_hist=DA_hist,de_hist=de_hist,
+            DH0=DH0,DA0=DA0,de0=de0,fixed_options=fixed_options,bin_range=bin_range,
+            hyper_range=hyper_range,posterior_names=posterior_names,hyper_nlp=hyper_nlp)
 
 if __name__ == '__main__':
     main()
