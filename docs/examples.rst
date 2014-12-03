@@ -12,8 +12,23 @@ Plot the results with only a CMB posterior applied::
 
 	./plot.py --input demo.0 --posterior CMB --show --zoom
 
-Full Calculation
-----------------
+Parallel Inference
+------------------
+
+Use the `multi package <https://github.com/dmargala/multi>`_ to run parallel jobs to calculate the dark-energy evolution with higher statistics at fixed hyperparameters::
+
+	~/multi/multi --nohup --split 0:10:1 --run "./infer.py --seed NNN --num-samples 10000000 --output de_NNN --dark-energy"
+
+Combine the parallel inferences::
+
+	./combine.py --input 'de_*' --output de_combined
+
+Generate dark-energy evolution plots with all posteriors applied::
+
+	./plot.py --input 'de_*' --posterior H0-LRG-Lya-CMB --dark-energy --output de_plots/
+
+Full Marginalization Calculation
+--------------------------------
 
 Run inferences on a grid of hyperparameter values::
 
