@@ -21,11 +21,11 @@ Use the `multi package <https://github.com/dmargala/multi>`_ to run parallel job
 
 Combine the parallel inferences::
 
-	./combine.py --input 'de_*' --output de_combined
+	./combine.py --input 'de_*' --output de
 
-Generate dark-energy evolution plots with all posteriors applied::
+Plot the dark-energy evolution with all posteriors applied::
 
-	./plot.py --input 'de_*' --posterior H0-LRG-Lya-CMB --dark-energy --output de_plots/
+	./plot.py --input de --posterior H0-LRG-Lya-CMB --show --dark-energy
 
 Full Marginalization Calculation
 --------------------------------
