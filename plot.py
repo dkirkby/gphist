@@ -243,10 +243,13 @@ def main():
             de_labels = (r'$\omega_{\phi}(z)$',r'$\omega_{\phi}(z)/\omega_{\phi}(0)$',
                 r'$\omega_{\phi}(z)/h_0^2$',r'$\omega_{\phi}(z)/h(z)^2$')
 
+            # Bin range for DE histograms is hardcoded for now.
+            de_bin_range = np.array([-10.,+10.])
+
             for ide in range(4):
 
                 de_limits = gphist.analysis.calculate_confidence_limits(
-                    de_hist[ide,iperm,:iend],[args.level],bin_range)
+                    de_hist[ide,iperm,:iend],[args.level],de_bin_range)
 
                 plt.subplot(num_plot_rows,2,2*irow+ide+1)
                 plt.xscale('linear')
