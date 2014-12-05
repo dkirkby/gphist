@@ -156,7 +156,7 @@ def main():
 
             fig = plt.figure(name,figsize=(12,4*num_plot_rows))
             fig.subplots_adjust(left=0.06,bottom=0.07,right=0.98,
-                top=0.99,wspace=0.15,hspace=0.18)
+                top=0.99,wspace=0.18,hspace=0.18)
             fig.set_facecolor('white')
             irow = 0
 
