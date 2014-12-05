@@ -81,9 +81,13 @@ def get_dark_energy_evolution(z,DH):
             the same last dimension as z.
 
     Returns:
-        ndarray: Array of omega_phi(z) values.
+        ndarray: Array with shape (2,...) where (...) is the shape of DH. The
+            [0] element gives values of omega_phi(z)/h0**2 for each entry in DH.
+            The [1] element gives values of omega_phi(z)/h(z)**2 for each entry
+            in DH.
     """
-    de_evol = np.empty(shape=(4,)+DH.shape)
+    nde = 2
+    de_evol = np.empty(shape=(nde,)+DH.shape)
     zp1 = 1+z
     zp1_cubed = zp1**3
     # Calculate h(z) = H(z)/(100 km/s/Mpc).
@@ -96,12 +100,11 @@ def get_dark_energy_evolution(z,DH):
     # Calculate the physical dark energy density Omega_phi(z)*h0**2 defined as
     # whatever is needed to make up h(z) after accounting for matter and radiation.
     # The result might be negative.
-    de_evol[0] = (h_of_z**2 - omega_radiation) - omega_matter[...,np.newaxis]*zp1_cubed
-    omega_phi = de_evol[0] # This is just an alias to make the following clearer.
+    omega_phi = (h_of_z**2 - omega_radiation) - omega_matter[...,np.newaxis]*zp1_cubed
     # Calculate omega_phi(z)/omega_phi(0).
-    de_evol[1] = omega_phi/omega_phi[...,0,np.newaxis]
+    ##de_evol[?] = omega_phi/omega_phi[...,0,np.newaxis]
     # Calculate omega_phi(z)/h0**2
-    de_evol[2] = omega_phi/h_of_z[...,0,np.newaxis]**2
+    de_evol[0] = omega_phi/h_of_z[...,0,np.newaxis]**2
     # Calculate omega_phi(z)/h(z)**2
-    de_evol[3] = omega_phi/h_of_z**2
+    de_evol[1] = omega_phi/h_of_z**2
     return de_evol

@@ -44,7 +44,7 @@ def main():
         return -1
 
     # Do we have anything to plot?
-    num_plot_rows = args.full + args.zoom + 2*args.dark_energy
+    num_plot_rows = args.full + args.zoom + args.dark_energy
     if num_plot_rows == 0 and not args.nlp:
         print 'No plots selected.'
         return 0
@@ -240,13 +240,13 @@ def main():
             plt.ylabel(r'$H(z)/(1+z)$ (Mpc)')
             '''
 
-            de_labels = (r'$\omega_{\phi}(z)$',r'$\omega_{\phi}(z)/\omega_{\phi}(0)$',
-                r'$\omega_{\phi}(z)/h_0^2$',r'$\omega_{\phi}(z)/h(z)^2$')
+            de_labels = (r'$\omega_{\phi}(z)/h_0^2$',r'$\omega_{\phi}(z)/h(z)^2$')
+            assert len(de_labels) == len(de_hist), 'Mismatch in number of dark-energy variables'
 
             # Bin range for DE histograms is hardcoded for now.
             de_bin_range = np.array([-10.,+10.])
 
-            for ide in range(4):
+            for ide in range(len(de_hist)):
 
                 de_limits = gphist.analysis.calculate_confidence_limits(
                     de_hist[ide,iperm,:iend],[args.level],de_bin_range)
@@ -265,7 +265,7 @@ def main():
                 plt.xlabel(r'$z$')
                 plt.ylabel(de_labels[ide])
 
-            irow += 2
+            irow += 1
 
         if num_plot_rows > 0:
             if args.output:
