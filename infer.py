@@ -81,6 +81,7 @@ def main():
 
         # BOSS Lya-Lya & QSO-Lya from Delubac 2014.
         gphist.posterior.BAOPosterior('Lya',args.zLya,9.15,1.22,36.46,0.20,-0.38,args.rsdrag),
+        gphist.posterior.DHPosterior('LyaDH',args.zLya,9.15*args.rsdrag,0.20*args.rsdrag),
     ]
 
     # The choice of CMB posterior depends on whether we are inferring the dark-energy evolution.
