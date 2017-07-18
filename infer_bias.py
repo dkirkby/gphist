@@ -54,11 +54,7 @@ def main():
     parser.add_argument('--dark-energy', action= 'store_true',
         help = 'calculate dark energy expansion history for each realization')
     parser.add_argument('--growth', action= 'store_true',
-        help = 'calculate growth functions for each realization')
-    parser.add_argument('--accel', action= 'store_true',
-        help = 'calculate deceleration parameter for each realization') 
-    parser.add_argument('--forecast', action= 'store_true',
-        help = 'adds a constraint for forecasting DESI results')            
+        help = 'calculate growth function for each realization')
     parser.add_argument('--num-bins', type = int, default = 1000,
         help = 'number of bins to use for histogramming DH/DH0 and DA/DA0')
     parser.add_argument('--min-ratio', type = float, default = 0.5,
@@ -72,8 +68,7 @@ def main():
     args = parser.parse_args()
 
 
-    
-    SN_data = np.loadtxt('jla_mub.txt')	
+    SN_data = np.loadtxt('wz_mub.txt')	
     z_SN = SN_data[:,0]
     mu_SN = SN_data[:,1]
 
@@ -81,31 +76,19 @@ def main():
     cov_mu = np.zeros((len(mu_SN),len(mu_SN)))
     for i in range(len(SN_cov)-1):
         cov_mu[i/31,i%31] = SN_cov[i+1]
-    
-    cov_mu+=np.identity(31)*0.02
-	
 
     BOSS_cov_z1 = np.loadtxt('BAO_BEUTLER_cov_z1.txt')
     BOSS_cov_z2 = np.loadtxt('BAO_BEUTLER_cov_z2.txt')
     BOSS_cov_z3 = np.loadtxt('BAO_BEUTLER_cov_z3.txt')
     cov_BOSS = np.dstack([BOSS_cov_z1,BOSS_cov_z2,BOSS_cov_z3])
-    BOSS_data = np.loadtxt('BAO_BEUTLER_results_nostrings.txt')
+    BOSS_data = np.loadtxt('BAO_bias_data.txt')
+    print BOSS_data[:,0]
     z_BOSS = BOSS_data[:,0]
     dist_BOSS = BOSS_data[:,1:]
-
-    DESI_data = np.loadtxt('DESI_means.txt')
-    z_DESI = DESI_data[0]
-    DA_DESI = DESI_data[2]
-    DH_DESI = DESI_data[1]
-    dist_DESI = np.dstack([DH_DESI,DA_DESI])[0]
-    DESI_cov = np.loadtxt('DESI_cov.txt')
-    DA_cov = DESI_cov[:,0]*0.01
-    DH_cov = DESI_cov[:,1]*0.01
-    cov_DESI = np.zeros((2,2,len(z_DESI)))
-    cov_DESI[0,0,:] = (DA_DESI*DA_cov)**2
-    cov_DESI[1,1,:] = (DH_DESI*DH_cov)**2
-    cov_DESI[0,1,:] = DH_DESI*DA_DESI*DA_cov*DH_cov*-0.38
-    cov_DESI[1,0,:] = cov_DESI[0,1,:]    
+    #print dist_BOSS
+    #print z_SN[0]
+    #print mu_SN[0]
+    #print cov_mu[0,0]
 
     # Initialize the posteriors to use.
     posteriors = [
@@ -117,17 +100,15 @@ def main():
         #    5300.0/args.rsdrag,5.3/args.rsdrag,0.,args.rsdrag),
 
         # Local H0 measurement from Reis 2011 (http://dx.doi.org/10.1088/0004-637X/730/2/119)
-        gphist.posterior.LocalH0Posterior('H0',73.24,1.74),
+        gphist.posterior.LocalH0Posterior('H0',6.623388E+01,1.74),
 
         # BOSS LRG BAO from Anderson 2014.
         #gphist.posterior.BAOPosterior('LRG',args.zLRG,20.74,0.69,14.95,0.21,-0.52,args.rsdrag),
         #gphist.posterior.BOSS2016Po
 
         # BOSS Lya-Lya & QSO-Lya from Delubac 2014.
-        #gphist.posterior.BAOPosterior('Lya',args.zLya,9.15,0.20,36.46,1.22,-0.38,args.rsdrag),
-        #from delubac 2017
-        gphist.posterior.BAOPosterior('Lya',args.zLya,9.07,0.31,37.77,2.13,-0.38,args.rsdrag),
-        #gphist.posterior.DHPosterior('LyaDH',args.zLya,9.15*args.rsdrag,0.20*args.rsdrag),
+        gphist.posterior.BAOPosterior('Lya',args.zLya,9.014,0.20,4.2598E+01,1.22,-0.38,args.rsdrag),
+        #gphist.posterior.DHPosterior('LyaDH',args.zLya,9.01375344*args.rsdrag,0.20*args.rsdrag),
 	
 	# SN posterior
 	#gphist.posterior.SNPosterior('SN',z_SN[0],mu_SN[0],cov_mu[0,0]),
@@ -135,21 +116,15 @@ def main():
 
     # The choice of CMB posterior depends on whether we are inferring the dark-energy evolution.
     if args.dark_energy:
-        print 'base_w public chain'
         # CMB constraints from base_w public chain.
-        #posteriors.append(
-        #    gphist.posterior.CMBPosterior('CMB',args.zstar,0.191908,12.727515,
-        #    1.56e-06,5.861e-05,0.00241565))
         posteriors.append(
-            gphist.posterior.CMBPosterior('CMB',args.zstar,0.1871433E+00,0.1238882E+02,
-            6.57448e-05,0.00461449,0.338313))
-            
+            gphist.posterior.CMBPosterior('CMB',args.zstar,1.934453E-01,1.329046E+01,
+            6.57448E-05,0.00461449,0.338313))
     else:
-        print 'extended case'
         # Extended CMB case from Shahab Nov-4 email.
         posteriors.append(
-            gphist.posterior.CMBPosterior('CMB',args.zstar,0.1871433E+00,0.1238882E+02,
-            6.57448e-05,0.00461449,0.338313))
+            gphist.posterior.CMBPosterior('CMB',args.zstar,1.934453E-01,1.329046E+01,
+            6.57448E-05,0.00461449,0.338313))
 
 
 
@@ -167,12 +142,6 @@ def main():
 
     posteriors.append(SN_post)
     posteriors.append(BOSS2016post)
-    
-    if args.forecast:
-        DESIpost = gphist.posterior.DESIPosterior('DESI',z_DESI,dist_DESI,cov_DESI,args.rsdrag)
-        posterior_redshifts = np.concatenate((posterior_redshifts,DESIpost.zpost))
-        posterior_names = np.concatenate((posterior_names,np.array([DESIpost.name])))
-        posteriors.append(DESIpost)
 
     # Initialize a grid of hyperparameters, if requested.
     if args.hyper_index is not None:
@@ -214,7 +183,9 @@ def main():
         model = gphist.distance.HubbleDistanceModel(evol)
         DH0 = model.DH0
         DA0 = model.DC0 # assuming zero curvature
-
+        #DL0 = model.DL0
+        #mu0 = model.mu0
+        
 
         # Initialize a reproducible random state for this offset. We use independent
         # states for sampling the prior and selecting random realizations so that these
@@ -237,7 +208,11 @@ def main():
             # Convert each sample into a corresponding tabulated DH(z).
             DH = model.get_DH(samples)
             del samples
+            #phi_temp,phi_dot = evol.get_phi(DH)
+            #phi2 = phi_dot/phi_temp #this is d log(phi) / dlog(a) I call it phi to not change things later
+            #phi = phi2 / phi0
 
+            #phi[np.isnan(phi)==True]=1.0
 
             # Free the large sample array before allocating a large array for DC.
             
@@ -247,7 +222,8 @@ def main():
 
             # Calculate the corresponding comoving angular scale functions DA(z).
             DA = gphist.distance.convert_DC_to_DA(DH,DC,args.omega_k)
-            mu = evol.get_mu(DH,DC,evol.zvalues)
+            #DL = evol.get_DL(DC,evol.zvalues)
+            mu = evol.get_mu(DH,DC,evol.zvalues) 
 
             # Calculate -logL for each combination of posterior and prior sample.
             posteriors_nlp = gphist.analysis.calculate_posteriors_nlp(
@@ -262,41 +238,31 @@ def main():
 
             # Downsample distance functions in preparation for histogramming.
             i_ds = evol.downsampled_indices
+
             z_ds,DH0_ds,DA0_ds = evol.zvalues[i_ds],DH0[i_ds],DA0[i_ds]
             DH_ds,DA_ds = DH[:,i_ds],DA[:,i_ds]
+            #phi_ds = np.ones(DH_ds.shape)
+            #phi0_ds = np.ones(DH0_ds.shape)
             if args.growth:
                 print 'calculating growth functions...'
-                phi0_ds,f0_ds = evol.get_phi_take2(DH0_ds[np.newaxis,:],evol.svalues[i_ds])
-                phi_ds,f_ds = evol.get_phi_take2(DH_ds,evol.svalues[i_ds])
+                phi0_ds = evol.get_phi_take2(DH0_ds[np.newaxis,:],evol.svalues[i_ds])
+                phi_ds = evol.get_phi_take2(DH_ds,evol.svalues[i_ds])
                 print 'done calculating growth functions'
             else:
-                phi0_ds,f0_ds = np.ones(DH0_ds.shape),np.ones(DH0_ds.shape)            
-                phi_ds,f_ds = np.ones(DH_ds.shape),np.ones(DH_ds.shape)
-            
-            if args.accel:
-                print 'calculating q'
-                q = evol.get_accel(DH,evol.svalues)
-                q0 = evol.get_accel(DH0[np.newaxis,:],evol.svalues)
-                q_ds = q[:,i_ds]
-                q0_ds = q0[0,i_ds]
-                print 'done calculating q'
-            else:
-                q_ds = np.ones(DH_ds.shape)
-                q0_ds = np.ones(DH0_ds.shape)    
+                phi_ds = np.ones(DH_ds.shape)
+                phi0_ds = np.ones(DH0_ds.shape)
 
             # Calculate dark energy evolution on the downsampled grid, if requested.
             de0_evol = gphist.cosmology.get_dark_energy_evolution(z_ds,DH0_ds)
-            #print args.dark_energy
             if args.dark_energy:
-                #print 'dark energy evolution'
                 de_evol = gphist.cosmology.get_dark_energy_evolution(z_ds,DH_ds)
             else:
                 de_evol = None
 
             # Build histograms for each downsampled redshift slice and for
             # all permutations of posteriors.
-            DH_hist,DA_hist,f_hist,phi_hist,de_hist,q_hist = gphist.analysis.calculate_histograms(
-                DH_ds,DH0_ds,DA_ds,DA0_ds,f_ds,f0_ds,phi_ds,phi0_ds,de_evol,de0_evol,q_ds,q0_ds,posteriors_nlp,
+            DH_hist,DA_hist,phi_hist,de_hist = gphist.analysis.calculate_histograms(
+                DH_ds,DH0_ds,DA_ds,DA0_ds,phi_ds,phi0_ds,de_evol,de0_evol,posteriors_nlp,
                 args.num_bins,args.min_ratio,args.max_ratio)
 
             # Combine with the results of any previous cycles.
@@ -304,16 +270,12 @@ def main():
                 combined_DH_hist = DH_hist
                 combined_DA_hist = DA_hist
                 combined_phi_hist = phi_hist
-                combined_f_hist = f_hist
-                combined_q_hist = q_hist
                 if args.dark_energy:
                     combined_de_hist = de_hist
             else:
                 combined_DH_hist += DH_hist
                 combined_DA_hist += DA_hist
                 combined_phi_hist += phi_hist
-                combined_f_hist += f_hist
-                combined_q_hist += q_hist
                 if args.dark_energy:
                     combined_de_hist += de_hist
 
@@ -331,8 +293,7 @@ def main():
             output_name = '%s.%d.npz' % (args.output,hyper_offset)
             np.savez(output_name,
                 zvalues=z_ds,DH_hist=combined_DH_hist,DA_hist=combined_DA_hist,phi_hist=combined_phi_hist,
-                f_hist=combined_f_hist,de_hist=combined_de_hist,q_hist=combined_q_hist,
-                DH0=DH0_ds,DA0=DA0_ds,phi0=phi0_ds,f0=f0_ds,de0=de0_evol,q0=q0_ds,
+                de_hist=combined_de_hist,DH0=DH0_ds,DA0=DA0_ds,de0=de0_evol,phi0=phi0_ds,
                 fixed_options=fixed_options,variable_options=variable_options,
                 bin_range=bin_range,hyper_range=hyper_range,
                 DH_realizations=DH_realizations,DA_realizations=DA_realizations,

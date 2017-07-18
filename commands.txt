@@ -1,0 +1,3 @@
+infer_bias_test2.py --growth --dark-energy --num-save 1 --hyper-index 0 --hyper-count 36 --hyper-h-min 0.03 --hyper-h-max 0.8 --hyper-sigma-min 0.003 --hyper-sigma-max 0.2 --hyper-num-sigma 6 --hyper-num-h 6 --output npz_files/bias_phi_de/bias_phi_de
+
+for the bias run with phi / de

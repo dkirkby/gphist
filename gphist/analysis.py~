@@ -94,7 +94,7 @@ def get_permutations(n):
 		mask[iperm] = np.bitwise_and(iperm,bits) > 0
 	return mask
 
-def calculate_histograms(DH,DH0,DA,DA0,f,f0,phi,phi0,de_evol,de0_evol,q,q0,nlp,num_bins,min_value,max_value):
+def calculate_histograms(DH,DH0,DA,DA0,f,f0,phi,phi0,de_evol,de0_evol,nlp,num_bins,min_value,max_value):
 	"""Build histograms for all permutations of posterior weightings.
 
 	The undefined ratio DA(z=0)/DA0(z=0) is never evaluated. The binning args are only
@@ -144,7 +144,6 @@ def calculate_histograms(DH,DH0,DA,DA0,f,f0,phi,phi0,de_evol,de0_evol,q,q0,nlp,n
 	DA_ratio = DA[:,1:]/DA0[1:]
 	f_ratio = f / f0
 	phi_ratio = phi/phi0
-	q_ratio = q/q0
 	#mu_ratio = mu[:,1:]/mu0[1:]
 	# Initialize posterior permutations.
 	nperm = 2**npost
@@ -153,7 +152,6 @@ def calculate_histograms(DH,DH0,DA,DA0,f,f0,phi,phi0,de_evol,de0_evol,q,q0,nlp,n
     # These are histograms of the RATIO wrt the fiducial values
 	DH_hist = np.empty((nperm,nz,num_bins+2))
 	f_hist = np.empty((nperm,nz,num_bins+2))
-	q_hist = np.empty((nperm,nz,num_bins+2))
 	phi_hist = np.empty((nperm,nz,num_bins+2))
 	DA_hist = np.empty((nperm,nz-1,num_bins+2))
 	#mu_hist = np.empty((nperm,nz-1,num_bins+2))
@@ -162,7 +160,6 @@ def calculate_histograms(DH,DH0,DA,DA0,f,f0,phi,phi0,de_evol,de0_evol,q,q0,nlp,n
     #going to attempt to use np.histogram instead of bincounts
 	f_bin_indices = get_bin_indices(f_ratio.T,num_bins,min_value,max_value)
 	phi_bin_indices = get_bin_indices(phi_ratio.T,num_bins,min_value,max_value)
-	q_bin_indices = get_bin_indices(q_ratio.T,num_bins,min_value,max_value)
 	DH_bin_indices = get_bin_indices(DH_ratio.T,num_bins,min_value,max_value)
 	DA_bin_indices = get_bin_indices(DA_ratio.T,num_bins,min_value,max_value)
 	#mu_bin_indices = get_bin_indices(mu_ratio.T,num_bins,min_value,max_value)
@@ -194,16 +191,14 @@ def calculate_histograms(DH,DH0,DA,DA0,f,f0,phi,phi0,de_evol,de0_evol,q,q0,nlp,n
 			f_hist[iperm,ihist] = np.bincount(
 				f_bin_indices[ihist],weights=perm_weights,minlength=num_bins+2)
 			phi_hist[iperm,ihist] = np.bincount(
-				phi_bin_indices[ihist],weights=perm_weights,minlength=num_bins+2)
-			q_hist[iperm,ihist] = np.bincount(
-				q_bin_indices[ihist],weights=perm_weights,minlength=num_bins+2)		
+				phi_bin_indices[ihist],weights=perm_weights,minlength=num_bins+2)	
             #phi_hist[iperm,ihist] = np.histogram(phi[:,ihist],num_bins+2,weights=perm_weights)[0]
 			# Build histograms of each dark-energy evolution variable (skipping zmax).
 			if de_evol is not None and ihist < nz-1:
 				for ide in range(nde):
 					de_hist[ide,iperm,ihist] = np.bincount(de_bin_indices[ide,ihist],
 						weights=perm_weights,minlength=num_bins+2)
-	return DH_hist,DA_hist,f_hist,phi_hist,de_hist,q_hist
+	return DH_hist,DA_hist,f_hist,de_hist
 
 def quantiles(histogram,quantile_levels,bin_range):
 	"""Calculate quantiles of a histogram.

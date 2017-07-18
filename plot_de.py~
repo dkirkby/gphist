@@ -64,6 +64,7 @@ def main():
         mpl.use('Agg')
     import matplotlib.pyplot as plt
     import matplotlib.patches as mpatches
+    from matplotlib import gridspec    
 
     # Load the input file.
     loaded = np.load(args.input + '.npz')
@@ -326,6 +327,124 @@ def main():
             plt.legend(loc='best')
             plt.savefig(args.output + '_growth-' + name + '.' + args.plot_format)
             plt.close()
+
+
+
+    # Load the input file.
+    loaded_DESI = np.load('DESI_phi_test2.npz')
+    loaded_bias = np.load('bias_phi_de.npz')
+    DH_hist_DESI = loaded_DESI['DH_hist']
+    DA_hist_DESI = loaded_DESI['DA_hist']
+    de_hist_DESI = loaded_DESI['de_hist']
+    f_hist_DESI = loaded_DESI['phi_hist']
+    DH_hist_bias = loaded_bias['DH_hist']
+    DA_hist_bias = loaded_bias['DA_hist']
+    de_hist_bias = loaded_bias['de_hist']
+    f_hist_bias = loaded_bias['phi_hist']
+    #print 'the shape of the combined phi histogram is '+str(phi_hist.shape)
+    #print 'the shape of the combined DH histogram is '+str(DH_hist.shape)
+    #phi_realizations = loaded['phi_realizations']
+    DH0 = loaded['DH0']
+    DA0 = loaded['DA0']
+    de0 = loaded['de0']
+    f0 = loaded['phi0']
+    zvalues_DESI = loaded_DESI['zvalues']
+    zvalues_bias = loaded_bias['zvalues']
+    #print zvalues_DESI.shape
+    #print zvalues_bias.shape
+    #assert zvalues ==zvalues_DESI , 'the zvalues are different'
+    lna=-np.log(1 + zvalues[::-1])
+    fixed_options = loaded['fixed_options']
+    bin_range = loaded['bin_range']
+    hyper_range = loaded['hyper_range']
+    posterior_names = loaded_DESI['posterior_names']
+
+    # Initialize the posterior permutations.
+    npost = len(posterior_names)
+    perms = gphist.analysis.get_permutations(npost)
+    # Initialize the hyperparameter grid.
+
+
+    name = 'idk'
+    fig = plt.figure(name,figsize=(12,8))
+    fig.subplots_adjust(left=0.06,bottom=0.07,right=0.98,
+                        top=0.99,wspace=0.0,hspace=0.18)
+    fig.set_facecolor('white')
+
+    plot_colors = ('red','blue','green')
+    plot_c = ('r','b','g')
+    alpha_c = (0.5,0.5,0.25)
+    gs = gridspec.GridSpec(1,1)
+
+    for iperm,j in zip((63,31),(0,1)):
+        print posterior_names[perms[iperm]]
+        ide = 0
+        print de_hist.shape
+        # Plot dark-energy evolution up to zmax.
+
+        iend = 1+np.argmax(zvalues_DESI > args.zmax)
+        de_labels = (r'$\omega_{\phi}(z)/h_0^2$',r'$\omega_{\phi}(z)/h(z)^2$')
+        assert len(de_labels) == len(de_hist), 'Mismatch in number of dark-energy variables'
+        # Bin range for DE histograms is hardcoded for now.
+        de_bin_range = np.array([-10.,+10.])
+
+            #for ide in range(len(de_hist)):
+
+        de_limits = gphist.analysis.calculate_confidence_limits(
+                    de_hist_DESI[ide,iperm,:iend],[args.level],de_bin_range)
+
+        plt.subplot(gs[0])
+        plt.xscale('linear')
+        plt.grid(True)
+        plt.xlim([0.,args.zmax])
+        plt.fill_between(zvalues_DESI[:iend],de_limits[0],de_limits[-1],
+                    facecolor=plot_c[j],alpha=alpha_c[j])
+        plt.plot(zvalues_DESI[:iend],de_limits[0],plot_c[j]+':')
+        plt.plot(zvalues_DESI[:iend],de_limits[1],plot_c[j]+'-')
+        plt.plot(zvalues_DESI[:iend],de_limits[2],plot_c[j]+':')
+        plt.plot(zvalues_DESI[:iend],de0[ide,:iend],'k--')
+        plt.xlabel(r'$z$')
+        plt.ylabel(de_labels[ide])
+
+    for iperm,j in zip((23,),(2,)):
+        print posterior_names[perms[iperm]]
+        ide = 0
+        print de_hist_bias.shape
+        # Plot dark-energy evolution up to zmax.
+
+        iend = 1+np.argmax(zvalues_bias > args.zmax)
+        de_labels = (r'$\omega_{\phi}(z)/h_0^2$',r'$\omega_{\phi}(z)/h(z)^2$')
+        assert len(de_labels) == len(de_hist_bias), 'Mismatch in number of dark-energy variables'
+        # Bin range for DE histograms is hardcoded for now.
+        de_bin_range = np.array([-10.,+10.])
+
+            #for ide in range(len(de_hist)):
+
+        de_limits = gphist.analysis.calculate_confidence_limits(
+                    de_hist_bias[ide,iperm,:iend],[args.level],de_bin_range)
+
+        plt.subplot(gs[0])
+        plt.xscale('linear')
+        plt.grid(True)
+        plt.xlim([0.,args.zmax])
+        plt.fill_between(zvalues[:iend],de_limits[0],de_limits[-1],
+                    facecolor=plot_c[j],alpha=alpha_c[j])
+        plt.plot(zvalues[:iend],de_limits[0],plot_c[j]+':')
+        plt.plot(zvalues[:iend],de_limits[1],plot_c[j]+'-')
+        plt.plot(zvalues[:iend],de_limits[2],plot_c[j]+':')
+        plt.plot(zvalues[:iend],de0[ide,:iend],'k--')
+        plt.xlabel(r'$z$')
+        plt.ylabel(de_labels[ide])
+
+    green_patch = mpatches.Patch(color=plot_colors[1],alpha=alpha_c[1],label = 'GP Result')
+    red_patch = mpatches.Patch(color=plot_colors[0],alpha=alpha_c[0],label = 'DESI from GP Result')
+    blue_patch = mpatches.Patch(color =plot_colors[2],alpha=alpha_c[2],label = r'w$_0$w$_a$')
+    plt.legend(handles = [green_patch,red_patch,blue_patch],loc='best')
+
+    plt.savefig(args.output + 'de_combined.' + args.plot_format)
+    plt.close()
+
+
 
 
 

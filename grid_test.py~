@@ -1,0 +1,172 @@
+#!/usr/bin/env python
+"""Infer the cosmological expansion history using a Gaussian process prior.
+"""
+
+import argparse
+import math
+
+import numpy as np
+
+import gphist
+import matplotlib.pyplot as plt
+
+print 'aaaa'
+
+def main():
+    # Parse command-line arguments.
+    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument('--seed', type = int, default = 26102014,
+        help = 'random seed to use for sampling the prior')
+    parser.add_argument('--num-samples', type = int, default = 1000000,
+        help = 'number of samples to generate')
+    parser.add_argument('--num-evol-hist', type = int, default = 100,
+        help = 'number of equally spaced evolution variable steps to use for histogramming')
+    parser.add_argument('--max-array-size', type = float, default = 1.0,
+        help = 'maximum array memory allocation size in gigabytes')
+    parser.add_argument('--hyper-h', type = float, default = 0.1,
+        help = 'vertical scale hyperparameter value to use')
+    parser.add_argument('--hyper-sigma', type = float, default = 0.02,
+        help = 'horizontal scale hyperparameter value to use')
+    parser.add_argument('--hyper-index', type = int, default = None,
+        help = 'index into hyperparameter marginalization grid to use (ignore if None)')
+    parser.add_argument('--hyper-count', type = int, default = 1,
+        help = 'number of consecutive marginalization grid indices to run')
+    parser.add_argument('--hyper-num-h', type = int, default = 10,
+        help = 'number of h grid points in marginalization grid')
+    parser.add_argument('--hyper-h-min', type = float, default = 0.01,
+        help = 'minimum value of hyperparameter h for marginalization grid')
+    parser.add_argument('--hyper-h-max', type = float, default = 1.0,
+        help = 'maximum value of hyperparameter h for marginalization grid')
+    parser.add_argument('--hyper-num-sigma', type = int, default = 20,
+        help = 'number of sigma grid points in marginalization grid')
+    parser.add_argument('--hyper-sigma-min', type = float, default = 0.001,
+        help = 'minimum value of hyperparameter sigma for marginalization grid')
+    parser.add_argument('--hyper-sigma-max', type = float, default = 1.0,
+        help = 'maximum value of hyperparameter sigma for marginalization grid')
+    parser.add_argument('--omega-k', type = float, default =0.,
+        help = 'curvature parameter')
+    parser.add_argument('--zstar', type = float, default = 1090.48,
+        help = 'nominal redshift of last scattering')
+    parser.add_argument('--zLRG', type = float, default = 0.57,
+        help = 'redshift of LRG BAO constraint')
+    parser.add_argument('--zLya', type = float, default = 2.3,
+        help = 'redshift of Lyman-alpha BAO constraint')
+    parser.add_argument('--rsdrag', type = float, default = 147.36,
+        help = 'nominal sound horizon rs(zdrag) at the drag epoch in Mpc')
+    parser.add_argument('--dark-energy', action= 'store_true',
+        help = 'calculate dark energy expansion history for each realization')
+    parser.add_argument('--num-bins', type = int, default = 1000,
+        help = 'number of bins to use for histogramming DH/DH0 and DA/DA0')
+    parser.add_argument('--min-ratio', type = float, default = 0.5,
+        help = 'minimum ratio for histogramming DH/DH0 and DA/DA0')
+    parser.add_argument('--max-ratio', type = float, default = 1.5,
+        help = 'maximum ratio for histogramming DH/DH0 and DA/DA0')
+    parser.add_argument('--num-save', type = int, default = 5,
+        help = 'number of prior realizations to save for each combination of posteriors')
+    parser.add_argument('--output', type = str, default = None,
+        help = 'name of output file to write (the extension .npz will be added)')
+    args = parser.parse_args()
+
+    print 'aaaaa'
+    SN_data = np.loadtxt('jla_mub.txt')	
+    z_SN = SN_data[:,0]
+    mu_SN = SN_data[:,1]
+
+    SN_cov = np.loadtxt('jla_mub_covmatrix.dat')
+    cov_mu = np.zeros((len(mu_SN),len(mu_SN)))
+    for i in range(len(SN_cov)-1):
+        cov_mu[i/31,i%31] = SN_cov[i+1]
+    
+    cov_mu+=np.identity(31)*0.02
+	
+
+    BOSS_cov_z1 = np.loadtxt('BAO_BEUTLER_cov_z1.txt')
+    BOSS_cov_z2 = np.loadtxt('BAO_BEUTLER_cov_z2.txt')
+    BOSS_cov_z3 = np.loadtxt('BAO_BEUTLER_cov_z3.txt')
+    cov_BOSS = np.dstack([BOSS_cov_z1,BOSS_cov_z2,BOSS_cov_z3])
+    BOSS_data = np.loadtxt('BAO_BEUTLER_results_nostrings.txt')
+    z_BOSS = BOSS_data[:,0]
+    dist_BOSS = BOSS_data[:,1:]
+    #print z_SN[0]
+    #print mu_SN[0]
+    #print cov_mu[0,0]
+
+    # Initialize the posteriors to use.
+    posteriors = [
+        # Debugging posteriors: 0.1% measurements of DH,DA at z=2.
+        #gphist.posterior.DHPosterior('DH',2.0,1450.0,1.45),
+        #phist.posterior.DAPosterior('DA',2.0,5300.0,5.3),
+        #gphist.posterior.BAOPosterior('DH+DA',2.0,
+        #    1450.0/args.rsdrag,1.45/args.rsdrag,
+        #    5300.0/args.rsdrag,5.3/args.rsdrag,0.,args.rsdrag),
+
+        # Local H0 measurement from Reis 2011 (http://dx.doi.org/10.1088/0004-637X/730/2/119)
+        gphist.posterior.LocalH0Posterior('H0',73.24,1.74),
+
+        # BOSS LRG BAO from Anderson 2014.
+        #gphist.posterior.BAOPosterior('LRG',args.zLRG,20.74,0.69,14.95,0.21,-0.52,args.rsdrag),
+        #gphist.posterior.BOSS2016Po
+
+        # BOSS Lya-Lya & QSO-Lya from Delubac 2014.
+        gphist.posterior.BAOPosterior('Lya',args.zLya,9.15,0.20,36.46,1.21,-0.38,args.rsdrag),
+        #gphist.posterior.DHPosterior('LyaDH',args.zLya,9.15*args.rsdrag,0.20*args.rsdrag),
+	
+	# SN posterior
+	#gphist.posterior.SNPosterior('SN',z_SN[0],mu_SN[0],cov_mu[0,0]),
+    ]
+
+    # The choice of CMB posterior depends on whether we are inferring the dark-energy evolution.
+    if args.dark_energy:
+        print 'base_w public chain'
+        # CMB constraints from base_w public chain.
+        #posteriors.append(
+        #    gphist.posterior.CMBPosterior('CMB',args.zstar,0.191908,12.727515,
+        #    1.56e-06,5.861e-05,0.00241565))
+        posteriors.append(
+            gphist.posterior.CMBPosterior('CMB',args.zstar,0.1871433E+00,0.1238882E+02,
+            6.57448e-05,0.00461449,0.338313))
+            
+    else:
+        print 'extended case'
+        # Extended CMB case from Shahab Nov-4 email.
+        posteriors.append(
+            gphist.posterior.CMBPosterior('CMB',args.zstar,0.1871433E+00,0.1238882E+02,
+            6.57448e-05,0.00461449,0.338313))
+
+
+
+    SN_post = gphist.posterior.SNPosterior('SN',z_SN,np.array([mu_SN]),cov_mu)
+    BOSS2016post = gphist.posterior.BOSS2016Posterior('LRG', z_BOSS, dist_BOSS ,cov_BOSS,args.rsdrag)
+       	
+    posterior_names = np.array([p.name for p in posteriors])
+    posterior_redshifts = np.array([p.zpost for p in posteriors])
+
+    posterior_redshifts = np.concatenate((posterior_redshifts,SN_post.zpost))
+    posterior_redshifts = np.concatenate((posterior_redshifts,BOSS2016post.zpost))
+
+    posterior_names = np.concatenate((posterior_names,np.array([SN_post.name])))
+    posterior_names = np.concatenate((posterior_names,np.array([BOSS2016post.name])))
+
+    posteriors.append(SN_post)
+    posteriors.append(BOSS2016post)
+
+    print args.hyper_index
+    # Initialize a grid of hyperparameters, if requested.
+    if args.hyper_index is not None:
+        hyper_grid = gphist.process.HyperParameterLogGrid(
+            args.hyper_num_h,args.hyper_h_min,args.hyper_h_max,
+            args.hyper_num_sigma,args.hyper_sigma_min,args.hyper_sigma_max)
+    else:
+        hyper_grid = None
+
+    # Loop over hyperparameter values.
+    for hyper_offset in range(args.hyper_count):
+
+        if hyper_grid:
+            hyper_index = args.hyper_index + hyper_offset
+            h,sigma = hyper_grid.get_values(hyper_index)
+        else:
+            hyper_index = None
+            h,sigma = args.hyper_h,args.hyper_sigma
+
+        print 'Using hyperparameters (h,sigma) = (%f,%f)' % (h,sigma)

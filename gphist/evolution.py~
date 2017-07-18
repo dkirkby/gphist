@@ -195,19 +195,24 @@ class LogScale(object):
             phi[i,-1]=phi[i,-2]
             phi_dot[i,istart:-1]=sol[:,1]
             phi_dot[i,-1]=phi_dot[i,-2]
-        return 1 + phi_dot/phi
+        return phi, 1 + phi_dot/phi
 
     def get_phi_take2(self,DH,svalues):
-    #returns the phi and the growth function f = 1 + phi_dot/phi
         lna = -svalues[::-1]*np.log(1 + self.zmax)
+        #print lna
         dlna = np.gradient(lna)
         istart = np.argmax(lna > -3.5)
+        #print istart
+        #print lna[istart:].shape
+        #print lna[istart:-1].shape
         phi = np.ones(DH.shape)
         phi_dot = np.zeros(DH.shape)
         for i in range(DH.shape[0]):
             H_z = 1./DH[i,::-1]
             H_prime = np.gradient(H_z,dlna)
-            HpoH = interpolate.interp1d(lna,H_prime/H_z)       
+            HpoH = interpolate.interp1d(lna,H_prime/H_z)
+            #print HpoH(lna[istart])
+            #print H_prime.shape
             def pend(y,s):
                 theta,omega = y
                 dydt = np.array([omega,-(4 + HpoH(s))*omega - (3 + 2*HpoH(s))*theta ])
@@ -222,16 +227,4 @@ class LogScale(object):
 
             phi[i,istart:] = sol_take2[0,:]
             phi_dot[i,istart:] = sol_take2[1,:]
-        return phi, 1 + phi_dot/phi
-      
-    def get_accel(self,DH,svalues): 
-    #returns the deceleration parameter q+1 = - h_dot/h^2 or dh/da *a/h        
-        lna = -svalues[::-1]*np.log(1 + self.zmax)
-        a = np.exp(lna)
-        da = np.gradient(a)    
-        q = np.zeros(DH.shape) 
-        for i in range(DH.shape[0]):
-            H_z = 1./DH[i,::-1]
-            H_prime = np.gradient(H_z,da)
-            q[i,:] =-H_prime*a/H_z 
-        return q     
+        return 1 + phi_dot/phi

@@ -20,14 +20,6 @@ def get_fiducial():
     return astropy.cosmology.FlatLambdaCDM(
         H0=100*h,Om0=0.3183-Onu0,Tcmb0=2.7255,Neff=3.046,m_nu=(0.,0.,mnu)*unit.eV)
 
-def get_model():
-    h = .6704
-    mnu = 0.06
-    #Ode0 = .6911
-    Onu0 = (mnu/94.04)/h**2
-    return astropy.cosmology.w0waCDM(
-        H0=100*h, Om0=0.3183-Onu0,Ode0=1+Onu0-.3183,w0=-2,wa=2,Tcmb0=2.7255,Neff = 3.046, m_nu=(0.,0.,mnu)*unit.eV)
-
 def get_DH(z,model=None):
     """Evaluates the distance function DH(z).
 
@@ -116,28 +108,3 @@ def get_dark_energy_evolution(z,DH):
     # Calculate omega_phi(z)/h(z)**2
     de_evol[1] = omega_phi/h_of_z**2
     return de_evol
-
-def get_omega_matter_evolution(z,DH):
-    """Calculates the dark energy density evolution.
-        
-        Args:
-        z(ndarray): Array of redshifts where DH is tabulated.
-        DH(ndarray): Array of Hubble distances DH(z) = c/H(z). Must have
-        the same last dimension as z.
-        
-        Returns:
-        ndarray: Array with shape (2,...) where (...) is the shape of DH. The
-        [0] element gives values of omega_phi(z)/h0**2 for each entry in DH.
-        The [1] element gives values of omega_phi(z)/h(z)**2 for each entry
-        in DH.
-        """
-    zp1 = 1+z
-    zp1_cubed = zp1**3
-    # Calculate h(z) = H(z)/(100 km/s/Mpc).
-    clight_km_per_sec = astropy.constants.c.to('km/s').value
-    h_of_z = clight_km_per_sec/DH/100.
-    # Calculate the physical matter density Omega_mat*h0**2 assuming that only
-    # matter and radiation contribute at zmax.
-    omega_radiation = get_omega_radiation(z)
-    omega_matter = (h_of_z[...,-1]**2 - omega_radiation[-1])/zp1_cubed[-1]
-    return omega_matter[...,np.newaxis]*zp1_cubed/h_of_z**2

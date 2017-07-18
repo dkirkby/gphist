@@ -328,6 +328,91 @@ def main():
             plt.close()
 
 
+    print 'making combo plot'
+#59 corresponds to H0-Lya-CMB-SN-LRG
+#3 corresponds to H0-Lya
+#56 corresponds to CMB-SN-LRG
+    fig = plt.figure(name,figsize=(12,4*num_plot_rows))
+    fig.subplots_adjust(left=0.06,bottom=0.07,right=0.98,
+                        top=0.99,wspace=0.18,hspace=0.18)
+    fig.set_facecolor('white')
+    # Find first z index beyond zmax.
+    iend = 1+np.argmax(zvalues > args.zmax)
+    plot_colors = ('cyan','yellow','magenta')
+    plot_c = ('c','y','m')
+    for i,j in zip((63,31,28),(0,1,2)):
+        DH_ratio_limits = gphist.analysis.calculate_confidence_limits(
+                                                    DH_hist[i],[args.level],bin_range)
+        DA_ratio_limits = gphist.analysis.calculate_confidence_limits(
+                                                    DA_hist[i],[args.level],bin_range)
+        DH_limits = DH_ratio_limits*DH0
+        DA_limits = np.empty_like(DH_limits)
+        DA_limits[:,1:] = DA_ratio_limits*DA0[1:]
+        DA_limits[:,0] = 0.
+
+        irow=0
+        plt.subplot(num_plot_rows,2,2*irow+1)
+        plt.xscale('log')
+        plt.grid(True)
+        plt.xlim([1.,1+np.max(zvalues)])
+        plt.fill_between(1+zvalues,DH_ratio_limits[0],DH_ratio_limits[-1],
+                facecolor=plot_colors[j],alpha=0.25)
+    
+        plt.plot(1+zvalues,DH_ratio_limits[0],plot_c[j]+':')
+        plt.plot(1+zvalues,DH_ratio_limits[1],plot_c[j]+'-')
+        plt.plot(1+zvalues,DH_ratio_limits[2],plot_c[j]+':')
+        plt.xlabel(r'$1+z$')
+        plt.ylabel(r'$D_H(z)/D_H^0(z)$')
+                             
+        plt.subplot(num_plot_rows,2,2*irow+2)
+        plt.xscale('log')
+        plt.grid(True)
+        plt.xlim([1.,1+np.max(zvalues)])
+        plt.fill_between(1+zvalues[1:],DA_ratio_limits[0],DA_ratio_limits[-1],
+                    facecolor=plot_colors[j],alpha=0.25)
+        plt.plot(1+zvalues[1:],DA_ratio_limits[0],plot_c[j]+':')
+        plt.plot(1+zvalues[1:],DA_ratio_limits[1],plot_c[j]+'-')
+        plt.plot(1+zvalues[1:],DA_ratio_limits[2],plot_c[j]+':')
+        plt.xlabel(r'$1+z$')
+        plt.ylabel(r'$D_A(z)/D_A^0(z)$')
+                             
+        irow += 1
+    
+        # Plot zooms of DH,DA up to zmax.
+
+        plt.subplot(num_plot_rows,2,2*irow+1)
+        plt.xscale('linear')
+        plt.grid(True)
+        plt.xlim([0.,args.zmax])
+        plt.fill_between(zvalues[:iend],1e-3*DH_limits[0,:iend],1e-3*DH_limits[-1,:iend],
+                    facecolor=plot_colors[j],alpha=0.25)
+        plt.plot(zvalues[:iend],1e-3*DH_limits[0,:iend],plot_c[j]+':')
+        plt.plot(zvalues[:iend],1e-3*DH_limits[1,:iend],plot_c[j]+'-')
+        plt.plot(zvalues[:iend],1e-3*DH_limits[2,:iend],plot_c[j]+':')
+        plt.plot(zvalues[:iend],1e-3*DH0[:iend],'k--')
+        plt.xlabel(r'$z$')
+        plt.ylabel(r'$D_H(z)$ (Gpc)')
+                             
+        plt.subplot(num_plot_rows,2,2*irow+2)
+        plt.xscale('linear')
+        plt.grid(True)
+        plt.xlim([0.,args.zmax])
+        plt.fill_between(zvalues[:iend],1e-3*DA_limits[0,:iend],1e-3*DA_limits[-1,:iend],
+                     facecolor=plot_colors[j],alpha=0.25)
+        plt.plot(zvalues[:iend],1e-3*DA_limits[0,:iend],plot_c[j]+':')
+        plt.plot(zvalues[:iend],1e-3*DA_limits[1,:iend],plot_c[j]+'-')
+        plt.plot(zvalues[:iend],1e-3*DA_limits[2,:iend],plot_c[j]+':')
+        plt.plot(zvalues[:iend],1e-3*DA0[:iend],'k--')
+        plt.xlabel(r'$z$')
+        plt.ylabel(r'$D_A(z)$ (Gpc)')
+
+    red_patch = mpatches.Patch(color='cyan',label = 'H0-Lya-CMB-SN-LRG-DESI')
+    green_patch = mpatches.Patch(color='yellow',label = 'H0-Lya')
+    blue_patch = mpatches.Patch(color = 'magenta',label = 'CMB-SN-LRG')
+    plt.legend(handles = [red_patch,green_patch,blue_patch],loc='best')
+
+    plt.savefig(args.output + '_combined' + '.' + args.plot_format)
+    plt.close()
 
 
 

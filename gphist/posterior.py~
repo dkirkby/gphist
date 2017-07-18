@@ -334,7 +334,6 @@ class DAPosterior(Posterior):
 			ndarray: Array of -log(prob) values calculated at each input value.
 		"""
 		#DAz = DAz[:,:,np.newaxis]
-		print DAz.shape
 		return self.pdf.get_nlp(DAz)
 
 class CMBPosterior(Posterior):

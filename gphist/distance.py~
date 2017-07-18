@@ -42,9 +42,9 @@ class HubbleDistanceModel(object):
         # Calculate the corresponding DC values.
         self.DC0 = evol.get_DC(self.DH0[np.newaxis,:])[0]
 	# Calculate the corresponding DL values
-	    #self.DL0 = evol.get_DL(self.DC0[np.newaxis,:],evol.zvalues)[0]
+	self.DL0 = evol.get_DL(self.DC0[np.newaxis,:],evol.zvalues)[0]
 	# Calculate the corresponding mu values
-	    #self.mu0 = 5.*np.log10(1.e5*self.DL0)
+	self.mu0 = 5.*np.log10(1.e5*self.DL0)
 
     def get_DH(self,samples):
         """Build expansion histories from Gaussian process samples.

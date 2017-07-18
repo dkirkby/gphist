@@ -13,22 +13,28 @@ def main():
     # Parse command-line arguments.
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--input',type = str, default = None,
-        help = 'name of input file(s) to read (wildcard patterns are supported)')
+        help = 'form of input file(s) to read (wildcard patterns are supported) (as in leave off the .0)')
     parser.add_argument('--output', type = str, default = None,
         help = 'name of output file to write (extension .npz will be added)')
+    parser.add_argument('--number',type = int, default =1,
+        help = 'number of files to load')    
     args = parser.parse_args()
 
     # Do we have any inputs to read?
     if args.input is None:
-        print 'Missing required input arg.'
-        return -1
-    input_files = glob.glob(args.input)
-    if not input_files:
-        input_files = glob.glob(args.input + '.npz')
-    if not input_files:
-        print 'No input files match the pattern %r' % args.input
-        return -1
-
+            print 'Missing required input arg.'
+            return -1
+    for i in range(args.number):
+        print args.input +'.'+ str(i)
+        if i==0:
+            input_files =glob.glob(args.input +'.'+ str(i)+'.npz')
+        else:
+            input_fies = input_files.append(glob.glob(args.input +'.'+ str(i)+'.npz')[0])
+        if not input_files:
+            print 'No input files match the pattern %r' % args.input
+            return -1
+    print input_files
+    
     # Loop over the input files.
     random_states = { }
     for index,input_file in enumerate(input_files):
@@ -39,9 +45,15 @@ def main():
             DH_hist = loaded['DH_hist']
             DA_hist = loaded['DA_hist']
             de_hist = loaded['de_hist']
+            phi_hist = loaded['phi_hist']
+            f_hist = loaded['f_hist']
+            q_hist = loaded['q_hist']
             DH0 = loaded['DH0']
             DA0 = loaded['DA0']
             de0 = loaded['de0']
+            phi0 = loaded['phi0']
+            f0 = loaded['f0']
+            q0 = loaded['q0']
             fixed_options = loaded['fixed_options']
             bin_range = loaded['bin_range']
             hyper_range = loaded['hyper_range']
@@ -79,10 +91,15 @@ def main():
                 'Found inconsistent hyperparameter grids'
             DH_hist += loaded['DH_hist']
             DA_hist += loaded['DA_hist']
+            phi_hist += loaded['phi_hist']
+            f_hist += loaded['f_hist']
+            de_hist += loaded['de_hist']
+            q_hist += loaded['q_hist']
         
-        # Always load these arrays.
+        # Always load these arrays. Is anything being done with these?        
         DH_realizations = loaded['DH_realizations']
         DA_realizations = loaded['DA_realizations']
+        #phi_realizations = loaded['phi_realizations']
         variable_options = loaded['variable_options']
 
         seed,hyper_index,hyper_offset = variable_options
@@ -108,9 +125,9 @@ def main():
         # Relative to the infer.py output format, we drop the variable_options and
         # *_realizations arrays, and add hyper_nlp.
         np.savez(output_name,
-            zvalues=zvalues,DH_hist=DH_hist,DA_hist=DA_hist,de_hist=de_hist,
-            DH0=DH0,DA0=DA0,de0=de0,fixed_options=fixed_options,bin_range=bin_range,
+            zvalues=zvalues,DH_hist=DH_hist,DA_hist=DA_hist,phi_hist=phi_hist,f_hist=f_hist,de_hist=de_hist,q_hist=q_hist,
+            DH0=DH0,DA0=DA0,phi0=phi0,f0=f0,de0=de0,q0=q0,fixed_options=fixed_options,bin_range=bin_range,
             hyper_range=hyper_range,posterior_names=posterior_names,hyper_nlp=hyper_nlp)
-
+            
 if __name__ == '__main__':
     main()
