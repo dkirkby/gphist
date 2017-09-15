@@ -23,7 +23,7 @@ def get_delta_chisq(confidence_levels=(0.6827,0.9543,0.9973),num_dof=2):
     """
     return scipy.stats.chi2.isf(1-np.array(confidence_levels),df=num_dof)
 
-def calculate_posteriors_nlp(zprior,DH,DA,mu,posteriors):
+def calculate_posteriors_nlp(zprior,DH,DA,mu,apar,aperp,posteriors):
 	"""Calculate -log(prob) for each combination of posterior and prior sample.
 
 	Args:
@@ -41,7 +41,7 @@ def calculate_posteriors_nlp(zprior,DH,DA,mu,posteriors):
 	npost = len(posteriors)
 	nlp = np.empty((npost,nsamples))
 	for ipost,post in enumerate(posteriors):
-		nlp[ipost] = post.get_nlp(zprior,DH,DA,mu)
+		nlp[ipost] = post.get_nlp(zprior,DH,DA,mu,apar,aperp)
 	return nlp
 
 def get_bin_indices(data,num_bins,min_value,max_value):
@@ -145,7 +145,6 @@ def calculate_histograms(DH,DH0,DA,DA0,f,f0,phi,phi0,de_evol,de0_evol,q,q0,nlp,n
 	f_ratio = f / f0
 	phi_ratio = phi/phi0
 	q_ratio = q/q0
-	#mu_ratio = mu[:,1:]/mu0[1:]
 	# Initialize posterior permutations.
 	nperm = 2**npost
 	perms = get_permutations(npost)
@@ -156,16 +155,13 @@ def calculate_histograms(DH,DH0,DA,DA0,f,f0,phi,phi0,de_evol,de0_evol,q,q0,nlp,n
 	q_hist = np.empty((nperm,nz,num_bins+2))
 	phi_hist = np.empty((nperm,nz,num_bins+2))
 	DA_hist = np.empty((nperm,nz-1,num_bins+2))
-	#mu_hist = np.empty((nperm,nz-1,num_bins+2))
 	de_hist = np.empty((nde,nperm,nz-1,num_bins+2)) if de_evol is not None else None
 	# Calculate bin indices (after swapping nsamples,nz axes).
-    #going to attempt to use np.histogram instead of bincounts
 	f_bin_indices = get_bin_indices(f_ratio.T,num_bins,min_value,max_value)
 	phi_bin_indices = get_bin_indices(phi_ratio.T,num_bins,min_value,max_value)
 	q_bin_indices = get_bin_indices(q_ratio.T,num_bins,min_value,max_value)
 	DH_bin_indices = get_bin_indices(DH_ratio.T,num_bins,min_value,max_value)
 	DA_bin_indices = get_bin_indices(DA_ratio.T,num_bins,min_value,max_value)
-	#mu_bin_indices = get_bin_indices(mu_ratio.T,num_bins,min_value,max_value)
 	if de_evol is not None:
 		# Calculate bin indices for the dark-energy evolution variables.
 		# Note that:
@@ -188,16 +184,12 @@ def calculate_histograms(DH,DH0,DA,DA0,f,f0,phi,phi0,de_evol,de0_evol,q,q0,nlp,n
 			if ihist > 0:
 				DA_hist[iperm,ihist-1] = np.bincount(
 					DA_bin_indices[ihist-1],weights=perm_weights,minlength=num_bins+2)
-			#if ihist > 0:
-			#	mu_hist[iperm,ihist-1] = np.bincount(
-			#		mu_bin_indices[ihist-1],weights=perm_weights,minlength=num_bins+2)
 			f_hist[iperm,ihist] = np.bincount(
 				f_bin_indices[ihist],weights=perm_weights,minlength=num_bins+2)
 			phi_hist[iperm,ihist] = np.bincount(
 				phi_bin_indices[ihist],weights=perm_weights,minlength=num_bins+2)
 			q_hist[iperm,ihist] = np.bincount(
 				q_bin_indices[ihist],weights=perm_weights,minlength=num_bins+2)		
-            #phi_hist[iperm,ihist] = np.histogram(phi[:,ihist],num_bins+2,weights=perm_weights)[0]
 			# Build histograms of each dark-energy evolution variable (skipping zmax).
 			if de_evol is not None and ihist < nz-1:
 				for ide in range(nde):
@@ -323,7 +315,6 @@ def select_random_realizations(DH,DA,nlp,num_realizations,
 	nperm = 2**npost
 	DH_realizations = np.empty((nperm,num_realizations,nz))
 	DA_realizations = np.empty((nperm,num_realizations,nz))
-	#mu_realizations = np.empty((nperm,num_realizations,nz))
 	# Fall back to the default random generator if necessary.
 	generator = random_state if random_state else np.random
 	# Generate a random CDF value for each realization.
@@ -344,5 +335,4 @@ def select_random_realizations(DH,DA,nlp,num_realizations,
 					num_unique,num_realizations,iperm)
 		DH_realizations[iperm] = DH[perm_rows]
 		DA_realizations[iperm] = DA[perm_rows]
-		#mu_realizations[iperm] = mu[perm_rows]
 	return DH_realizations,DA_realizations

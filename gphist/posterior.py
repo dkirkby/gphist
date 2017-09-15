@@ -23,15 +23,12 @@ class GaussianPdf(object):
 	"""
 	def __init__(self,mean,covariance):
 		# Check that the dimensions match or throw a ValueError.
-		#print 'the shape of the mean is'+str(mean.shape)
-		#print 'the shape of the covariance is'+str(covariance.shape)
 		#dimensions_check = mean.dot(covariance.dot(mean))
 		# Check that the covariance is postive definite or throw a LinAlgError.
         #posdef_check = numpy.linalg.cholesky(covariance[:,:,0])
 
 		self.mean = mean
 		if len(covariance.shape) > 2: #this assumes there are exactly 3 covariance matrices for 3 redshifts
-			#print 'this should only happen once for the boss data'			
 			temp_icov = np.linalg.inv(covariance[:,:,0])
 			for i in range(1,covariance.shape[2]):
 			    stack_temp = np.linalg.inv(covariance[:,:,i])
@@ -42,12 +39,8 @@ class GaussianPdf(object):
 			    temp_norm+=0.5*(np.log(np.linalg.det(covariance[:,:,i])))
 			self.norm = temp_norm
 		else:
-			#print 'this should happen 5 times not 6'
-			#print np.linalg.det(covariance)
 			self.icov = np.linalg.inv(covariance)
 			self.norm = 0.5*mean.size*np.log(2*math.pi) + 0.5*np.log(np.linalg.det(covariance))
-		#print self.mean.shape
-		#print self.icov.shape
 		# Calculate the constant offset of -log(prob) due to the normalization factors.
 
 	def get_nlp(self,values):
@@ -71,67 +64,17 @@ class GaussianPdf(object):
 			ValueError: Values can not be broadcast together with our mean vector.
 		"""
 		# The next line will throw a ValueError if values cannot be broadcast.
-		#print self.name
-		#print 'in order: values, mean, residual, icov'
-		#print 'the values are'
-		#print values
-		#print 'the mean is'
-		#print self.mean
-		#print self.mean
 		residuals = values - self.mean
-		#print residuals
 		a = residuals.shape
-		#print self.icov
-		#print 'the shape of the covariance matrix is'+str(self.icov.shape)
-		#print a
-		#print a[2]
-		#chisq = np.tensordot()
         #a[2] is ntype; the difference between these cases which dimension the covariance matrix is for
         # ALL OF THESE RESIDUALS SHOULD BE OF THE FORM (NSAMPLE,NZ,NTYPE)
 		if a[1]>1 and a[2]==1:   # should correspond to just SN data
-			#print 'Type 1'
-			#print 'the values with shape '+str(values.shape) +' are'
-			#print values
-			#print 'the mean with shape '+str(self.mean.shape) +'is'
-			#print self.mean
-			#print 'the residuals with shape '+str(residuals.shape) +' are'
-			#print residuals
-			#print 'the icov with shape '+str(self.icov.shape)+ ' is'
-			#print self.icov
 			chisq = np.einsum('...ijk,jl,...ilk->...i',residuals,self.icov,residuals)
-			#print 'the normalization is'
-			#print self.norm
-			#print 'the chisq is '
-			#print 0.5*chisq
-			#print 'the total log prob is'
-			#print self.norm + 0.5*chisq
 		elif a[2]>1 and a[1]>1:  #should correspond to just BOSS 2016
-			#print 'Type 2'
-			#print 'the values with shape '+str(values.shape) +' are'
-			#print values
-			#print 'the mean with shape '+str(self.mean.shape) +'is'
-			#print self.mean
-			#print 'the residuals with shape '+str(residuals.shape) +' are'
-			#print residuals
-			#print 'the icov with shape '+str(self.icov.shape)+ ' is'
-			#print self.icov
 			chisq = np.einsum('...ijk,klj,...ijl->...i',residuals,self.icov,residuals)
-		else:
-			#print 'Type 3'
-			#print 'the values with shape '+str(values.shape) +' are'
-			#print values
-			#print 'the mean with shape '+str(self.mean.shape) +'is'
-			#print self.mean
-			#print 'the residuals with shape '+str(residuals.shape) +' are'
-			#print residuals
-			#print 'the icov with shape '+str(self.icov.shape)+ ' is'
-			#print self.icov
+		else:			
 			chisq = np.einsum('...ijk,kl,...ijl->...i',residuals,self.icov,residuals)
-		#print chisq
-		#print 'the normalization is'
-		#print self.norm
-		#print 'the chisq is '
-		#print 0.5*chisq
+			
 		return self.norm + 0.5*chisq
 
 class GaussianPdf1D(GaussianPdf):
@@ -192,7 +135,7 @@ class Posterior(object):
 		self.zpost = zpost
 
 	@abstractmethod
-	def constraint(self,DHz,DAz,muz):
+	def constraint(self,DHz,DAz,muz,aparz,aperpz):
 		"""Evaluate the posterior constraint given values of DH(zpost) and DA(zpost).
 
 		Args:
@@ -204,7 +147,7 @@ class Posterior(object):
 		"""
 		pass
 
-	def get_nlp(self,zprior,DH,DA,mu):
+	def get_nlp(self,zprior,DH,DA,mu,apar,aperp):
 		"""Calculate -log(prob) for the posterior applied to a set of expansion histories.
 
 		The posterior is applied to c/H(z=0).
@@ -221,37 +164,12 @@ class Posterior(object):
 		"""
 		#iprior = np.argmax(zprior==self.zpost)
 		iprior = np.where(np.in1d(zprior,self.zpost))[0] #for whatever reason np.where returns a tuple of an array so thats why there is the [0] after
-		#iprior_test = np.append(iprior)
-		#print self.name
-		#print iprior[0]
-		#print zprior[iprior[0]]
-		#print iprior_test
-		#assert zprior[iprior[0]] == self.zpost,'zpost is not in zprior'
-		#DHz = DH[:,iprior[0]]
-		#DAz = DA[:,iprior[0]]
-		#muz = mu[:,iprior[0]]
-		#DHz_test = DH[:,iprior][:,0]
-		#DAz_test = DA[:,iprior][:,0]
-		#muz_test = mu[:,iprior][:,0]
-		#DHz_test2 = DH[:,iprior]
-		#DAz_test2 = DA[:,iprior]
-		#muz_test2 = mu[:,iprior]
-		#DHz_test2 = DH[:,iprior_test]
-		#DAz_test2 = DA[:,iprior_test]
-		#muz_test2 = mu[:,iprior_test]
-		#DHz = DH[:,iprior][:,0] #curious, this implementation raises the assert error
-		#DAz = DA[:,iprior][:,0]
-		#muz = mu[:,iprior][:,0]
 		DHz = DH[:,iprior]
 		DAz = DA[:,iprior]
 		muz = mu[:,iprior]# these should be of the form (nsample,nz)
-		#print DHz.shape		
-		#print DHz_test.shape
-		#print DHz_test2.shape
-		#assert id(DH)==id(DHz.base)
-		#assert id(DH)==id(DHz_test.base)
-		#assert id(DA)==id(DAz.base)
-		return self.constraint(DHz,DAz,muz)
+		aparz = apar[:,iprior]
+		aperpz = aperp[:,iprior]
+		return self.constraint(DHz,DAz,muz,aparz,aperpz)
 
 class LocalH0Posterior(Posterior):
 	"""Posterior constraint on the value of H0 determined from local measurements.
@@ -265,7 +183,7 @@ class LocalH0Posterior(Posterior):
 		self.pdf = GaussianPdf1D(H0,H0_error)
 		Posterior.__init__(self,name,0.)
 
-	def constraint(self,DHz,DAz,muz):
+	def constraint(self,DHz,DAz,muz,aparz,aperpz):
 		"""Calculate -log(prob) for the posterior applied to a set of expansion histories.
 
 		The posterior is applied to c/H(z=0).
@@ -277,11 +195,6 @@ class LocalH0Posterior(Posterior):
 			ndarray: Array of -log(prob) values calculated at each input value.
 		"""
 		clight_km_per_sec = astropy.constants.c.to('km/s').value
-		#print 'the shape of DHz is'+str(DHz.shape)
-		#DHz = DHz[:,:,np.newaxis]
-		#print DHz.shape
-		#a= clight_km_per_sec/DHz
-		#print a.shape
 		return self.pdf.get_nlp(clight_km_per_sec/DHz)
 
 class DHPosterior(Posterior):
@@ -297,7 +210,7 @@ class DHPosterior(Posterior):
 		self.pdf = GaussianPdf1D(DH,DH_error)
 		Posterior.__init__(self,name,zpost)
 
-	def constraint(self,DHz,DAz,muz):
+	def constraint(self,DHz,DAz,muz,aparz,aperpz):
 		"""Calculate -log(prob) for the posterior applied to a set of expansion histories.
 
 		Args:
@@ -307,7 +220,6 @@ class DHPosterior(Posterior):
 		Returns:
 			ndarray: Array of -log(prob) values calculated at each input value.
 		"""
-		#DHz = DHz[:,:,np.newaxis]
 		return self.pdf.get_nlp(DHz)
 
 class DAPosterior(Posterior):
@@ -323,7 +235,7 @@ class DAPosterior(Posterior):
 		self.pdf = GaussianPdf1D(DA,DA_error)
 		Posterior.__init__(self,name,zpost)
 
-	def constraint(self,DHz,DAz,muz):
+	def constraint(self,DHz,DAz,muz,aparz,aperpz):
 		"""Calculate -log(prob) for the posterior applied to a set of expansion histories.
 
 		Args:
@@ -333,8 +245,6 @@ class DAPosterior(Posterior):
 		Returns:
 			ndarray: Array of -log(prob) values calculated at each input value.
 		"""
-		#DAz = DAz[:,:,np.newaxis]
-		print DAz.shape
 		return self.pdf.get_nlp(DAz)
 
 class CMBPosterior(Posterior):
@@ -354,15 +264,11 @@ class CMBPosterior(Posterior):
 		cov12 *= (1+zpost)
 		cov22 *= (1+zpost)**2
 		covariance = np.array([[cov11,cov12],[cov12,cov22]])
-		#print 'the covariance matrix for the CMB is'
-		#print covariance
-		mean = mean[np.newaxis,:]#trying to make all the means of the form (nz,ntype) since the values will be of the form (nsample,NZ,NTYPE)
-		#print 'the shape of the CMB mean is'
-		#print mean.shape
+		mean = mean[np.newaxis,:]#trying to make all the means of the form (nz,ntype) since the values will be of the form (Nsample,Nz,Ntype)		
 		self.pdf = GaussianPdf(mean,covariance)
 		Posterior.__init__(self,name,zpost)
 
-	def constraint(self,DHz,DAz,muz):
+	def constraint(self,DHz,DAz,muz,aparz,aperpz):
 		"""Calculate -log(prob) for the posterior applied to a set of expansion histories.
 
 		Args:
@@ -373,8 +279,6 @@ class CMBPosterior(Posterior):
 			ndarray: Array of -log(prob) values calculated at each input value.
 		"""
 		values = np.dstack([DHz,DAz]) #dstack since DH(A)z are of the form (nsamples,nz) and we want (nsamples,nz,ntype)
-		#print 'the shape of the CMB values are'
-		#print values.shape
 		return self.pdf.get_nlp(values)#erased the transpose to the above effect
 
 class BAOPosterior(Posterior):
@@ -398,7 +302,7 @@ class BAOPosterior(Posterior):
 		self.pdf = GaussianPdf2D(apar,sigma_apar,aperp,sigma_aperp,rho)
 		Posterior.__init__(self,name,zpost)
 
-	def constraint(self,DHz,DAz,muz):
+	def constraint(self,DHz,DAz,muz,aparz,aperpz):
 		"""Calculate -log(prob) for the posterior applied to a set of expansion histories.
 
 		The posterior is applied simultaneously to DH(z)/rs(zd) and DA(z)/rs(zd).
@@ -413,35 +317,7 @@ class BAOPosterior(Posterior):
 		values = np.dstack([DHz,DAz])/self.rsdrag#see CMB posterior comments
 		return self.pdf.get_nlp(values)
 
-class SNPosterior_unused(Posterior):
-	"""Posterior constraint on mu(z).
 
-	Args:
-		name(str): Name to associate with this posterior.
-		zpost(float): Redshift of posterior constraint.
-		mu(float): Central value of mu(z).
-		mu_error(float): RMS error on mu(z).
-	"""
-	def __init__(self,name,zpost,mu,mu_error):
-		#print mu
-		#mu = np.array([mu])
-		#print mu.shape
-		#mu = mu[:,np.newaxis]#trying to make all the means of the form (nz,ntype) since the values will be of the form (nsample,nz,ntype)
-		self.pdf = GaussianPdf1D(mu,mu_error)
-		Posterior.__init__(self,name,zpost)
-
-	def constraint(self,DHz,DAz,muz):
-		"""Calculate -log(prob) for the posterior applied to a set of expansion histories.
-
-		Args:
-			DHz(ndarray): Array of DH(zpost) values to use (will be ignored).
-			DAz(ndarray): Array of DA(zpost) values to use.
-
-		Returns:
-			ndarray: Array of -log(prob) values calculated at each input value.
-		"""
-		#muz = muz[:,:,np.newaxis]
-		return self.pdf.get_nlp(muz)
 
 class SNPosterior(Posterior):
 	"""Posterior constraint on mu(z).
@@ -458,7 +334,7 @@ class SNPosterior(Posterior):
 		Posterior.__init__(self,name,zpost)
 
 
-	def constraint(self,DHz,DAz,muz):
+	def constraint(self,DHz,DAz,muz,aparz,aperpz):
 		"""Calculate -log(prob) for the posterior applied to a set of expansion histories.
 
 		Args:
@@ -472,38 +348,145 @@ class SNPosterior(Posterior):
 		muz = muz[:,:,np.newaxis]
 		return self.pdf.get_nlp(muz)
 
+
 class BOSS2016Posterior(Posterior):
+    """Posterior constraint on DH, DA for LRGs.
+
+    Args:
+        name(str): Name to associate with this posterior.
+        zpost(float): Redshift of posterior constraint.
+        mean(float): data.
+        cov(float): cavariance matrix.
+        rsdrag(float): fiducial rsdrag.
+    """
     def __init__(self,name,zpost,mean,cov,rsdrag):
         self.rsdrag = rsdrag
-        #print 'BOSS mean shape is'
-        #print mean.shape
         self.pdf = GaussianPdf(mean,cov)
         Posterior.__init__(self,name,zpost)
     #trying to make all the means of the form (nz,ntype) since the values will be of the form (nsample,ntype,nz)
 
-    def constraint(self,DHz,DAz,muz):
+    def constraint(self,DHz,DAz,muz,aparz,aperpz):
+        """Calculate -log(prob) for the posterior applied to a set of expansion histories.
+
+        Args:
+            DHz(ndarray): Array of DH(zpost) values to use.
+            DAz(ndarray): Array of DA(zpost) values to use.
+            muz(ndarray): this is no longer the 5log(DL/10pc) but instead 5 log (DL/DH0)
+            aparz(ndarray): Array of apar(zpost) values to use.
+            aperpz(ndarray): Array of aperp(zpost) values to use.
+
+        Returns:
+            ndarray: Array of -log(prob) values calculated at each input value.
+        """
         Hz = 2.99792458e5 /DHz
         values = np.dstack([Hz,DAz])
-        #print 'BOSS 2016 val shape is'
-        #print values.shape
-        #print 'the shape of BOSS values are'
-        #print values.shape
         return self.pdf.get_nlp(values)
+
+   
         
 class DESIPosterior(Posterior):
+    """Posterior constraint on DH, DA for LRGs.
+
+    Args:
+        name(str): Name to associate with this posterior.
+        zpost(float): Redshift of posterior constraint.
+        mean(float): data.
+        cov(float): cavariance matrix.
+        rsdrag(float): fiducial rsdrag.
+    """
     def __init__(self,name,zpost,mean,cov,rsdrag):
         self.rsdrag = rsdrag
-        #print 'DESI mean shape is'
-        #print mean.shape
         self.pdf = GaussianPdf(mean,cov)
         Posterior.__init__(self,name,zpost)
     #trying to make all the means of the form (nz,ntype) since the values will be of the form (nsample,ntype,nz)
 
-    def constraint(self,DHz,DAz,muz):
-        #Hz = 2.99792458e5 /DHz
+    def constraint(self,DHz,DAz,muz,aparz,aperpz):
+        """Calculate -log(prob) for the posterior applied to a set of expansion histories.
+
+        Args:
+            DHz(ndarray): Array of DH(zpost) values to use.
+            DAz(ndarray): Array of DA(zpost) values to use.
+            muz(ndarray): this is no longer the 5log(DL/10pc) but instead 5 log (DL/DH0)
+            aparz(ndarray): Array of apar(zpost) values to use.
+            aperpz(ndarray): Array of aperp(zpost) values to use.
+
+        Returns:
+            ndarray: Array of -log(prob) values calculated at each input value.
+        """
         values = np.dstack([DHz,DAz])
-        #print 'DESI 2016 val shape is'
-        #print values.shape
-        #print 'the shape of BOSS values are'
-        #print values.shape
-        return self.pdf.get_nlp(values)        
+        return self.pdf.get_nlp(values)
+
+
+class ScalePosteriorLya(Posterior):
+    """Posterior constraint on the parallel and perpendicular scale factors from BAO.
+
+    Args:
+        name(str): Name to associate with this posterior.
+        zpost(double): Redshift where posterior should be evaluated.
+        apar(double): Line-of-sight (parallel) scale factor measured using BAO.
+        sigma_apar(double): RMS error on measured apar.
+        aperp(double): Transverse (perpendicular) scale factor measured using BAO.
+        sigma_aperp(double): RMS error on measured aperp.
+        rho(double): Correlation coefficient between apar and aperp.
+            Must be between -1 and +1.
+
+    Raises:
+        AssertionError: The redshift z is not an element of zprior.
+    """
+    def __init__(self,name,zpost,apar,sigma_apar,aperp,sigma_aperp,rho,rsdrag):
+		self.rsdrag = rsdrag
+		self.pdf = GaussianPdf2D(apar,sigma_apar,aperp,sigma_aperp,rho)
+		Posterior.__init__(self,name,zpost)
+    #trying to make all the means of the form (nz,ntype) since the values will be of the form (nsample,ntype,nz)
+
+    def constraint(self,DHz,DAz,muz,aparz,aperpz):
+        """Calculate -log(prob) for the posterior applied to a set of expansion histories.
+
+        The posterior is applied simultaneously to DH(z)/rs(zd) and DA(z)/rs(zd).
+
+        Args:
+            aparz(ndarray): Array of apar(zpost) values to use.
+            aperpz(ndarray): Array of aperp(zpost) values to use.
+
+        Returns:
+            ndarray: Array of -log(prob) values calculated at each input value.
+        """
+        values = np.dstack([aparz,aperpz])
+        return self.pdf.get_nlp(values)
+
+  
+        
+class ScalePosteriorLRG(Posterior):
+    """Posterior constraint on DH, DA for LRGs.
+
+    Args:
+        name(str): Name to associate with this posterior.
+        zpost(float): Redshift of posterior constraint.
+        mean(float): data.
+        cov(float): cavariance matrix.
+        rsdrag(float): fiducial rsdrag.
+    """
+    def __init__(self,name,zpost,mean,cov,rsdrag):
+        self.rsdrag = rsdrag
+        self.pdf = GaussianPdf(mean,cov)
+        Posterior.__init__(self,name,zpost)
+    #trying to make all the means of the form (nz,ntype) since the values will be of the form (nsample,ntype,nz)
+
+    def constraint(self,DHz,DAz,muz,aparz,aperpz):
+        """Calculate -log(prob) for the posterior applied to a set of expansion histories.
+
+        Args:
+            DHz(ndarray): Array of DH(zpost) values to use.
+            DAz(ndarray): Array of DA(zpost) values to use.
+            muz(ndarray): this is no longer the 5log(DL/10pc) but instead 5 log (DL/DH0)
+            aparz(ndarray): Array of apar(zpost) values to use.
+            aperpz(ndarray): Array of aperp(zpost) values to use.
+
+        Returns:
+            ndarray: Array of -log(prob) values calculated at each input value.
+        """
+        DH_scalez = aparz*self.rsdrag
+        H_scalez = 2.99792458e5 /DHz
+        DA_scalez = aperpz*self.rsdrag
+        values = np.dstack([H_scalez,DA_scalez])
+        return self.pdf.get_nlp(values)                                

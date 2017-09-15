@@ -131,74 +131,96 @@ class LogScale(object):
         np.cumsum(DC[:,1:],axis=1,out=DC[:,1:])
         return DC
 
-    def get_DL(self,DC,z):
-	""" Converts a comoving distance to a to a luminosity distance
-	DL = DC/a = DC*(1+z)
-
-	Args:
-            DC(ndarray): 2D array of tabulated comoving distances DC with shape
-                (nsamples,nsteps). DC[i,j] is interpreted as the distance to
-                zvalues[j] for sample i.
-
-	   z(ndarray): 1D array of redshifts with shape (nsteps)
-
-        Returns:
-            ndarray: 2D array of tabulated luminosity distances DL with the same
-                shape as the input DC array. The [i,j] value gives DL at
-                zvalues[j].
-        """
-	#initialize
-        DL = np.empty_like(DC)
-        array_shape= DL.shape
-        nsamples = array_shape[0]
-        z_array = np.tile(z,(nsamples,1))
-        DL = DC*(1+z_array)
-	#DL[DL==0]=1.e-60
-        return DL
         
     def get_mu(self,DH,DC,z):
+        """Converts comoving distances DC(z) to mu(z).
+
+        Args:
+            DH(ndarray): 2D array of tabulated Hubble distances DH with shape
+                (nsamples,nsteps). DH[i,j] is interpreted as the distance to
+                zvalues[j] for sample i.
+            DC(ndarray): 2D array of tabulated Hubble distances DH with shape
+                (nsamples,nsteps). DH[i,j] is interpreted as the distance to
+                zvalues[j] for sample i. 
+            z(ndarray)       
+
+        Returns:
+            ndarray: 2D array of tabulated mu with the same
+                shape as the input DC array. The [i,j] value gives mu at
+                zvalues[j].
+        """
         mu = np.empty_like(DC)
-        array_shape= mu.shape
-        nsamples = array_shape[0]
+        nsamples = mu.shape[0]
         z_array = np.tile(z,(nsamples,1))
         DH_0 = np.tile(DH[:,0],(DH.shape[1],1)).T
         anchor = 5.*np.log10(2.99792458*1.e9/7.)
         mu[:,0]=-np.inf
         mu[:,1:] = 5.*np.log10((1.+z_array[:,1:])*DC[:,1:]/DH_0[:,1:])+anchor
         return mu 
+    
+    
+    def get_apar(self,DH,DH_zstar_fid,rs_fid,z):
+        """Calculates apar assuming rsdrag scales as DH(zstar) for that history.
+
+        Args:
+            DH(ndarray): 2D array of tabulated Hubble distances DH with shape
+                (nsamples,nsteps). DH[i,j] is interpreted as the distance to
+                zvalues[j] for sample i.
+            DH_zstar_fid(float): DH0[-1] fiducial DH at last scattering 
+            rs_fid(float): fiducial rsdrag
+            z(ndarray):redshifts        
+
+        Returns:
+            ndarray: 2D array of tabulated apar with the same
+                shape as the input DH array. The [i,j] value gives mu at
+                zvalues[j].
+        """
+        apar = np.empty_like(DH)
+        DH_zstar = np.tile(DH[:,-1],(DH.shape[1],1)).T
+        apar = DH*DH_zstar_fid/(rs_fid*DH_zstar)
+        return apar
+  
+        
+    def get_aperp(self,DH,DA,DH_zstar_fid,rs_fid,z):
+        """Calculates aperp assuming rsdrag scales as DH(zstar) for that history.
+
+        Args:
+            DH(ndarray): 2D array of tabulated Hubble distances DH with shape
+                (nsamples,nsteps). DH[i,j] is interpreted as the distance to
+                zvalues[j] for sample i.
+            DH(ndarray): 2D array of tabulated angular diameter distances DA with shape
+                (nsamples,nsteps). DA[i,j] is interpreted as the distance to
+                zvalues[j] for sample i.
+            DH_zstar_fid(float): DH0[-1] fiducial DH at last scattering 
+            rs_fid(float): fiducial rsdrag
+            z(ndarray):redshifts        
+
+        Returns:
+            ndarray: 2D array of tabulated apar with the same
+                shape as the input DH array. The [i,j] value gives mu at
+                zvalues[j].
+        """
+        aperp = np.empty_like(DA)
+        DH_zstar = np.tile(DH[:,-1],(DH.shape[1],1)).T
+        apar = DA*DH_zstar_fid/(rs_fid*DH_zstar)
+        return apar       
         
     
-    def get_phi(self,DH,svalues):
-        lna = -svalues[::-1]*np.log(1 + self.zmax)
-        #print lna
-        dlna = np.gradient(lna)
-        istart = np.argmax(lna > -3.5)
-        #print istart
-        #print lna[istart:].shape
-        #print lna[istart:-1].shape
-        phi = np.ones(DH.shape)
-        phi_dot = np.zeros(DH.shape)
-        for i in range(DH.shape[0]):
-            H_z = 1./DH[i,::-1]
-            H_prime = np.gradient(H_z,dlna)
-            HpoH = interpolate.interp1d(lna,H_prime/H_z)
-            #print HpoH(lna[istart])
-            #print H_prime.shape        
-            def pend(y,s):
-                theta,omega = y
-                dydt = [omega,-(4 + HpoH(s))*omega - (3 + 2*HpoH(s))*theta ]
-                return dydt
-            
-            y0 = [1,0]
-            sol = odeint(pend,y0,lna[istart:-1])
-            phi[i,istart:-1]=sol[:,0]
-            phi[i,-1]=phi[i,-2]
-            phi_dot[i,istart:-1]=sol[:,1]
-            phi_dot[i,-1]=phi_dot[i,-2]
-        return 1 + phi_dot/phi
-
     def get_phi_take2(self,DH,svalues):
     #returns the phi and the growth function f = 1 + phi_dot/phi
+        """Calculates growth functions phi and f.
+
+        Args:
+            DH(ndarray): 2D array of tabulated Hubble distances DH with shape
+                (nsamples,nsteps). DH[i,j] is interpreted as the distance to
+                zvalues[j] for sample i.
+            svalues(ndarray):scaled lna
+
+        Returns:
+            ndarray:2 2D arrays of tabulated phi(a) and f = dlnphi/dlna with the same
+                shape as the input DH array. The [i,j] value gives mu at
+                zvalues[j].
+        """
         lna = -svalues[::-1]*np.log(1 + self.zmax)
         dlna = np.gradient(lna)
         istart = np.argmax(lna > -3.5)
@@ -223,8 +245,22 @@ class LogScale(object):
             phi[i,istart:] = sol_take2[0,:]
             phi_dot[i,istart:] = sol_take2[1,:]
         return phi, 1 + phi_dot/phi
+   
       
     def get_accel(self,DH,svalues): 
+        """Calculates accel parameter q.
+
+        Args:
+            DH(ndarray): 2D array of tabulated Hubble distances DH with shape
+                (nsamples,nsteps). DH[i,j] is interpreted as the distance to
+                zvalues[j] for sample i.
+            svalues(ndarray):scaled lna
+
+        Returns:
+            ndarray:2D array of tabulated q(a) with the same
+                shape as the input DH array. The [i,j] value gives mu at
+                zvalues[j].
+        """
     #returns the deceleration parameter q+1 = - h_dot/h^2 or dh/da *a/h        
         lna = -svalues[::-1]*np.log(1 + self.zmax)
         a = np.exp(lna)

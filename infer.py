@@ -58,7 +58,9 @@ def main():
     parser.add_argument('--accel', action= 'store_true',
         help = 'calculate deceleration parameter for each realization') 
     parser.add_argument('--forecast', action= 'store_true',
-        help = 'adds a constraint for forecasting DESI results')            
+        help = 'adds a constraint for forecasting DESI results') 
+    parser.add_argument('--Neff', action= 'store_true',
+        help = 'use distances for case where Neff varies')               
     parser.add_argument('--num-bins', type = int, default = 1000,
         help = 'number of bins to use for histogramming DH/DH0 and DA/DA0')
     parser.add_argument('--min-ratio', type = float, default = 0.5,
@@ -81,8 +83,6 @@ def main():
     cov_mu = np.zeros((len(mu_SN),len(mu_SN)))
     for i in range(len(SN_cov)-1):
         cov_mu[i/31,i%31] = SN_cov[i+1]
-    
-    cov_mu+=np.identity(31)*0.02
 	
 
     BOSS_cov_z1 = np.loadtxt('BAO_BEUTLER_cov_z1.txt')
@@ -125,7 +125,7 @@ def main():
 
         # BOSS Lya-Lya & QSO-Lya from Delubac 2014.
         #gphist.posterior.BAOPosterior('Lya',args.zLya,9.15,0.20,36.46,1.22,-0.38,args.rsdrag),
-        #from delubac 2017
+        #from Bautista 2017
         gphist.posterior.BAOPosterior('Lya',args.zLya,9.07,0.31,37.77,2.13,-0.38,args.rsdrag),
         #gphist.posterior.DHPosterior('LyaDH',args.zLya,9.15*args.rsdrag,0.20*args.rsdrag),
 	
@@ -134,22 +134,20 @@ def main():
     ]
 
     # The choice of CMB posterior depends on whether we are inferring the dark-energy evolution.
-    if args.dark_energy:
-        print 'base_w public chain'
-        # CMB constraints from base_w public chain.
+    if args.Neff:
+        print 'LCDM+Neff:TT'
         #posteriors.append(
         #    gphist.posterior.CMBPosterior('CMB',args.zstar,0.191908,12.727515,
         #    1.56e-06,5.861e-05,0.00241565))
         posteriors.append(
-            gphist.posterior.CMBPosterior('CMB',args.zstar,0.1871433E+00,0.1238882E+02,
-            6.57448e-05,0.00461449,0.338313))
+            gphist.posterior.CMBPosterior('CMB',args.zstar,1.8636260E-01,1.215866E+01,
+            3.51315078E-05,3.1234742E-03,2.823618E-01))
             
     else:
-        print 'extended case'
-        # Extended CMB case from Shahab Nov-4 email.
+        print 'LCDM:TT'
         posteriors.append(
-            gphist.posterior.CMBPosterior('CMB',args.zstar,0.1871433E+00,0.1238882E+02,
-            6.57448e-05,0.00461449,0.338313))
+            gphist.posterior.CMBPosterior('CMB',args.zstar,1.9273724E-01,1.2749623E+01,
+            1.68889856E-06,5.894375E-05,2.2449463E-03))
 
 
 
@@ -270,8 +268,8 @@ def main():
                 phi_ds,f_ds = evol.get_phi_take2(DH_ds,evol.svalues[i_ds])
                 print 'done calculating growth functions'
             else:
-                phi0_ds,f0_ds = np.ones(DH0_ds.shape),np.ones(DH0_ds.shape)            
-                phi_ds,f_ds = np.ones(DH_ds.shape),np.ones(DH_ds.shape)
+                phi0_ds,f0_ds = None,None          
+                phi_ds,f_ds = None,None
             
             if args.accel:
                 print 'calculating q'
@@ -281,8 +279,8 @@ def main():
                 q0_ds = q0[0,i_ds]
                 print 'done calculating q'
             else:
-                q_ds = np.ones(DH_ds.shape)
-                q0_ds = np.ones(DH0_ds.shape)    
+                q_ds = None
+                q0_ds = None   
 
             # Calculate dark energy evolution on the downsampled grid, if requested.
             de0_evol = gphist.cosmology.get_dark_energy_evolution(z_ds,DH0_ds)
@@ -303,17 +301,21 @@ def main():
             if combined_DH_hist is None:
                 combined_DH_hist = DH_hist
                 combined_DA_hist = DA_hist
-                combined_phi_hist = phi_hist
-                combined_f_hist = f_hist
-                combined_q_hist = q_hist
+                if args.growth:
+                    combined_phi_hist = phi_hist
+                    combined_f_hist = f_hist
+                if args.accel:    
+                    combined_q_hist = q_hist
                 if args.dark_energy:
                     combined_de_hist = de_hist
             else:
                 combined_DH_hist += DH_hist
                 combined_DA_hist += DA_hist
-                combined_phi_hist += phi_hist
-                combined_f_hist += f_hist
-                combined_q_hist += q_hist
+                if args.growth:
+                    combined_phi_hist += phi_hist
+                    combined_f_hist += f_hist
+                if args.accel:    
+                    combined_q_hist += q_hist
                 if args.dark_energy:
                     combined_de_hist += de_hist
 
