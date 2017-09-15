@@ -221,7 +221,7 @@ def main():
         realization_random_state = np.random.RandomState([args.seed,hyper_offset])
 
         # Break the calculation into cycles to limit the memory consumption.
-        combined_DH_hist,combined_DA_hist,combined_de_hist = None,None,None
+        combined_DH_hist,combined_DA_hist,combined_de_hist,combined_phi_hist,combined_f_hist,combined_q_hist = None,None,None,None,None,None
         samples_remaining = args.num_samples
         while samples_remaining > 0:
 
