@@ -142,24 +142,28 @@ def calculate_histograms(DH,DH0,DA,DA0,f,f0,phi,phi0,de_evol,de0_evol,q,q0,nlp,n
 	# Rescale DH,DA by DH0,DA0. We drop the z=0 bin for the DA ratio to avoid 0/0.
 	DH_ratio = DH/DH0
 	DA_ratio = DA[:,1:]/DA0[1:]
-	f_ratio = f / f0
-	phi_ratio = phi/phi0
-	q_ratio = q/q0
+	if f is not None:
+	    f_ratio = f / f0
+	    phi_ratio = phi/phi0
+	if q is not None:    
+	    q_ratio = q/q0
 	# Initialize posterior permutations.
 	nperm = 2**npost
 	perms = get_permutations(npost)
 	# Allocate output arrays for the histogram bin values.
     # These are histograms of the RATIO wrt the fiducial values
 	DH_hist = np.empty((nperm,nz,num_bins+2))
-	f_hist = np.empty((nperm,nz,num_bins+2))
-	q_hist = np.empty((nperm,nz,num_bins+2))
-	phi_hist = np.empty((nperm,nz,num_bins+2))
+	f_hist = np.empty((nperm,nz,num_bins+2)) if f is not None else None
+	q_hist = np.empty((nperm,nz,num_bins+2)) if q is not None else None
+	phi_hist = np.empty((nperm,nz,num_bins+2)) if phi is not None else None
 	DA_hist = np.empty((nperm,nz-1,num_bins+2))
 	de_hist = np.empty((nde,nperm,nz-1,num_bins+2)) if de_evol is not None else None
 	# Calculate bin indices (after swapping nsamples,nz axes).
-	f_bin_indices = get_bin_indices(f_ratio.T,num_bins,min_value,max_value)
-	phi_bin_indices = get_bin_indices(phi_ratio.T,num_bins,min_value,max_value)
-	q_bin_indices = get_bin_indices(q_ratio.T,num_bins,min_value,max_value)
+	if f is not None:
+	    f_bin_indices = get_bin_indices(f_ratio.T,num_bins,min_value,max_value)
+	    phi_bin_indices = get_bin_indices(phi_ratio.T,num_bins,min_value,max_value)
+	if q is not None:    
+	    q_bin_indices = get_bin_indices(q_ratio.T,num_bins,min_value,max_value)
 	DH_bin_indices = get_bin_indices(DH_ratio.T,num_bins,min_value,max_value)
 	DA_bin_indices = get_bin_indices(DA_ratio.T,num_bins,min_value,max_value)
 	if de_evol is not None:
@@ -184,12 +188,14 @@ def calculate_histograms(DH,DH0,DA,DA0,f,f0,phi,phi0,de_evol,de0_evol,q,q0,nlp,n
 			if ihist > 0:
 				DA_hist[iperm,ihist-1] = np.bincount(
 					DA_bin_indices[ihist-1],weights=perm_weights,minlength=num_bins+2)
-			f_hist[iperm,ihist] = np.bincount(
-				f_bin_indices[ihist],weights=perm_weights,minlength=num_bins+2)
-			phi_hist[iperm,ihist] = np.bincount(
-				phi_bin_indices[ihist],weights=perm_weights,minlength=num_bins+2)
-			q_hist[iperm,ihist] = np.bincount(
-				q_bin_indices[ihist],weights=perm_weights,minlength=num_bins+2)		
+			if f is not None:		
+			    f_hist[iperm,ihist] = np.bincount(
+				    f_bin_indices[ihist],weights=perm_weights,minlength=num_bins+2)
+			    phi_hist[iperm,ihist] = np.bincount(
+				    phi_bin_indices[ihist],weights=perm_weights,minlength=num_bins+2)
+			if q is not None:	    
+			    q_hist[iperm,ihist] = np.bincount(
+				    q_bin_indices[ihist],weights=perm_weights,minlength=num_bins+2)		
 			# Build histograms of each dark-energy evolution variable (skipping zmax).
 			if de_evol is not None and ihist < nz-1:
 				for ide in range(nde):

@@ -270,8 +270,10 @@ def main():
                 phi_ds,f_ds = evol.get_phi_take2(DH_ds,evol.svalues[i_ds])
                 print 'done calculating growth functions'
             else:
-                phi0_ds,f0_ds = np.ones(DH0_ds.shape),np.ones(DH0_ds.shape)            
-                phi_ds,f_ds = np.ones(DH_ds.shape),np.ones(DH_ds.shape)
+                phi0_ds,f0_ds = None,None
+                phi_ds,f_ds = None,None
+                #phi0_ds,f0_ds = np.ones(DH0_ds.shape),np.ones(DH0_ds.shape)            
+                #phi_ds,f_ds = np.ones(DH_ds.shape),np.ones(DH_ds.shape)
             
             if args.accel:
                 print 'calculating q'
@@ -281,8 +283,10 @@ def main():
                 q0_ds = q0[0,i_ds]
                 print 'done calculating q'
             else:
-                q_ds = np.ones(DH_ds.shape)
-                q0_ds = np.ones(DH0_ds.shape)   
+                q_ds = None
+                q0_ds = None
+                #q_ds = np.ones(DH_ds.shape)
+                #q0_ds = np.ones(DH0_ds.shape)   
 
             # Calculate dark energy evolution on the downsampled grid, if requested.
             de0_evol = gphist.cosmology.get_dark_energy_evolution(z_ds,DH0_ds)
@@ -298,6 +302,7 @@ def main():
             DH_hist,DA_hist,f_hist,phi_hist,de_hist,q_hist = gphist.analysis.calculate_histograms(
                 DH_ds,DH0_ds,DA_ds,DA0_ds,f_ds,f0_ds,phi_ds,phi0_ds,de_evol,de0_evol,q_ds,q0_ds,posteriors_nlp,
                 args.num_bins,args.min_ratio,args.max_ratio)
+
 
             # Combine with the results of any previous cycles.
             if combined_DH_hist is None:

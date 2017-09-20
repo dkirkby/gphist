@@ -45,6 +45,7 @@ def main():
             DH_hist = loaded['DH_hist']
             DA_hist = loaded['DA_hist']
             de_hist = loaded['de_hist']
+            print de_hist
             phi_hist = loaded['phi_hist']
             f_hist = loaded['f_hist']
             q_hist = loaded['q_hist']
@@ -91,15 +92,17 @@ def main():
                 'Found inconsistent hyperparameter grids'
             DH_hist += loaded['DH_hist']
             DA_hist += loaded['DA_hist']
-            phi_hist += loaded['phi_hist']
-            f_hist += loaded['f_hist']
-            de_hist += loaded['de_hist']
-            q_hist += loaded['q_hist']
+            if phi_hist:
+                phi_hist += loaded['phi_hist']
+                f_hist += loaded['f_hist']
+            if de_hist:    
+                de_hist += loaded['de_hist']
+            if q_hist:        
+                q_hist += loaded['q_hist']
         
         # Always load these arrays. Is anything being done with these?        
         DH_realizations = loaded['DH_realizations']
         DA_realizations = loaded['DA_realizations']
-        #phi_realizations = loaded['phi_realizations']
         variable_options = loaded['variable_options']
 
         seed,hyper_index,hyper_offset = variable_options
