@@ -177,7 +177,7 @@ class LogScale(object):
         """
         apar = np.empty_like(DH)
         DH_zstar = np.tile(DH[:,-1],(DH.shape[1],1)).T
-        apar = DH*DH_zstar_fid/(rs_fid*DH_zstar)
+        apar = DH*(DH_zstar_fid/DH_zstar)**1.5/rs_fid
         return apar
   
         
@@ -202,7 +202,7 @@ class LogScale(object):
         """
         aperp = np.empty_like(DA)
         DH_zstar = np.tile(DH[:,-1],(DH.shape[1],1)).T
-        apar = DA*DH_zstar_fid/(rs_fid*DH_zstar)
+        apar = DA*(DH_zstar_fid/DH_zstar)**1.5/rs_fid
         return apar       
         
     
