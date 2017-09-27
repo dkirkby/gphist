@@ -1,9 +1,9 @@
 """Bayesian inference of the expansion history using Gaussian processes.
 """
 
-import process
-import evolution
-import cosmology
-import distance
-import posterior
-import analysis
+import gphist.process
+import gphist.evolution
+import gphist.cosmology
+import gphist.distance
+import gphist.posterior
+import gphist.analysis

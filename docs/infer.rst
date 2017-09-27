@@ -1,7 +1,7 @@
 infer
 =====
 
-Describe the infer.py program here...
+Infer the cosmological expansion history using a Gaussian process prior.
 
 Memory Usage
 ------------

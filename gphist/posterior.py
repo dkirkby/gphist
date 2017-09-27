@@ -72,9 +72,9 @@ class GaussianPdf(object):
 			chisq = np.einsum('...ijk,jl,...ilk->...i',residuals,self.icov,residuals)
 		elif a[2]>1 and a[1]>1:  #should correspond to just BOSS 2016
 			chisq = np.einsum('...ijk,klj,...ijl->...i',residuals,self.icov,residuals)
-		else:			
+		else:
 			chisq = np.einsum('...ijk,kl,...ijl->...i',residuals,self.icov,residuals)
-			
+
 		return self.norm + 0.5*chisq
 
 class GaussianPdf1D(GaussianPdf):
@@ -264,7 +264,7 @@ class CMBPosterior(Posterior):
 		cov12 *= (1+zpost)
 		cov22 *= (1+zpost)**2
 		covariance = np.array([[cov11,cov12],[cov12,cov22]])
-		mean = mean[np.newaxis,:]#trying to make all the means of the form (nz,ntype) since the values will be of the form (Nsample,Nz,Ntype)		
+		mean = mean[np.newaxis,:]#trying to make all the means of the form (nz,ntype) since the values will be of the form (Nsample,Nz,Ntype)
 		self.pdf = GaussianPdf(mean,covariance)
 		Posterior.__init__(self,name,zpost)
 
@@ -382,8 +382,8 @@ class BOSS2016Posterior(Posterior):
         values = np.dstack([Hz,DAz])
         return self.pdf.get_nlp(values)
 
-   
-        
+
+
 class DESIPosterior(Posterior):
     """Posterior constraint on DH, DA for LRGs.
 
@@ -434,9 +434,9 @@ class ScalePosteriorLya(Posterior):
         AssertionError: The redshift z is not an element of zprior.
     """
     def __init__(self,name,zpost,apar,sigma_apar,aperp,sigma_aperp,rho,rsdrag):
-		self.rsdrag = rsdrag
-		self.pdf = GaussianPdf2D(apar,sigma_apar,aperp,sigma_aperp,rho)
-		Posterior.__init__(self,name,zpost)
+        self.rsdrag = rsdrag
+        self.pdf = GaussianPdf2D(apar,sigma_apar,aperp,sigma_aperp,rho)
+        Posterior.__init__(self,name,zpost)
     #trying to make all the means of the form (nz,ntype) since the values will be of the form (nsample,ntype,nz)
 
     def constraint(self,DHz,DAz,muz,aparz,aperpz):
@@ -454,8 +454,8 @@ class ScalePosteriorLya(Posterior):
         values = np.dstack([aparz,aperpz])
         return self.pdf.get_nlp(values)
 
-  
-        
+
+
 class ScalePosteriorLRG(Posterior):
     """Posterior constraint on DH, DA for LRGs.
 
@@ -489,4 +489,4 @@ class ScalePosteriorLRG(Posterior):
         H_scalez = 2.99792458e5 /DHz
         DA_scalez = aperpz*self.rsdrag
         values = np.dstack([H_scalez,DA_scalez])
-        return self.pdf.get_nlp(values)                                
+        return self.pdf.get_nlp(values)

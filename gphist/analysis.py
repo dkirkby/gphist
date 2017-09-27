@@ -106,7 +106,7 @@ def calculate_histograms(DH,DH0,DA,DA0,f,f0,phi,phi0,de_evol,de0_evol,q,q0,nlp,n
 		DH0(ndarray): Array of shape (nz,) used to normalize each DH(z).
 		DA(ndarray): Array of shape (nsamples,nz) of DA(z) values to use.
 		DA0(ndarray): Array of shape (nz,) used to normalize each DA(z).
-        f:(ndarray): array of shaoe(nasmple,nz) of f = 1 + d ln(phi) / d ln(a) replaces phi
+		f:(ndarray): array of shaoe(nasmple,nz) of f = 1 + d ln(phi) / d ln(a) replaces phi
 		de_evol(ndarray): Array of shape (nde,nsamples,nz) of nde dark-energy
 			evolution histories, or None if they have not been calculated.
 		de0_evol(ndarray): Array of shape (nde,nz) of nde fiducial dark-energy
@@ -145,7 +145,7 @@ def calculate_histograms(DH,DH0,DA,DA0,f,f0,phi,phi0,de_evol,de0_evol,q,q0,nlp,n
 	if f is not None:
 	    f_ratio = f / f0
 	    phi_ratio = phi/phi0
-	if q is not None:    
+	if q is not None:
 	    q_ratio = q/q0
 	# Initialize posterior permutations.
 	nperm = 2**npost
@@ -162,7 +162,7 @@ def calculate_histograms(DH,DH0,DA,DA0,f,f0,phi,phi0,de_evol,de0_evol,q,q0,nlp,n
 	if f is not None:
 	    f_bin_indices = get_bin_indices(f_ratio.T,num_bins,min_value,max_value)
 	    phi_bin_indices = get_bin_indices(phi_ratio.T,num_bins,min_value,max_value)
-	if q is not None:    
+	if q is not None:
 	    q_bin_indices = get_bin_indices(q_ratio.T,num_bins,min_value,max_value)
 	DH_bin_indices = get_bin_indices(DH_ratio.T,num_bins,min_value,max_value)
 	DA_bin_indices = get_bin_indices(DA_ratio.T,num_bins,min_value,max_value)
@@ -188,14 +188,14 @@ def calculate_histograms(DH,DH0,DA,DA0,f,f0,phi,phi0,de_evol,de0_evol,q,q0,nlp,n
 			if ihist > 0:
 				DA_hist[iperm,ihist-1] = np.bincount(
 					DA_bin_indices[ihist-1],weights=perm_weights,minlength=num_bins+2)
-			if f is not None:		
+			if f is not None:
 			    f_hist[iperm,ihist] = np.bincount(
 				    f_bin_indices[ihist],weights=perm_weights,minlength=num_bins+2)
 			    phi_hist[iperm,ihist] = np.bincount(
 				    phi_bin_indices[ihist],weights=perm_weights,minlength=num_bins+2)
-			if q is not None:	    
+			if q is not None:
 			    q_hist[iperm,ihist] = np.bincount(
-				    q_bin_indices[ihist],weights=perm_weights,minlength=num_bins+2)		
+				    q_bin_indices[ihist],weights=perm_weights,minlength=num_bins+2)
 			# Build histograms of each dark-energy evolution variable (skipping zmax).
 			if de_evol is not None and ihist < nz-1:
 				for ide in range(nde):
@@ -337,8 +337,8 @@ def select_random_realizations(DH,DA,nlp,num_realizations,
 		if print_warnings:
 			num_unique = np.unique(perm_rows).size
 			if num_unique < num_realizations:
-				print 'WARNING: only %d of %d realizations are unique for permutation %d' % (
-					num_unique,num_realizations,iperm)
+				print('WARNING: only %d of %d realizations are unique for permutation %d' % (
+					num_unique,num_realizations,iperm))
 		DH_realizations[iperm] = DH[perm_rows]
 		DA_realizations[iperm] = DA[perm_rows]
 	return DH_realizations,DA_realizations

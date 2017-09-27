@@ -1,4 +1,4 @@
 plot
 ====
 
-Describe the plot.py program here...
+Plot expansion history inferences.
