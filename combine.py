@@ -16,23 +16,18 @@ def main():
         help = 'form of input file(s) to read (wildcard patterns are supported) (as in leave off the .0)')
     parser.add_argument('--output', type = str, default = None,
         help = 'name of output file to write (extension .npz will be added)')
-    parser.add_argument('--number',type = int, default =1,
-        help = 'number of files to load')    
     args = parser.parse_args()
 
     # Do we have any inputs to read?
     if args.input is None:
             print 'Missing required input arg.'
             return -1
-    for i in range(args.number):
-        print args.input +'.'+ str(i)
-        if i==0:
-            input_files =glob.glob(args.input +'.'+ str(i)+'.npz')
-        else:
-            input_fies = input_files.append(glob.glob(args.input +'.'+ str(i)+'.npz')[0])
-        if not input_files:
-            print 'No input files match the pattern %r' % args.input
-            return -1
+    input_files = glob.glob(args.input)
+    if not input_files:
+        input_files = glob.glob(args.input+'.npz')
+    if not input_files:
+        print 'No input files match the pattern %r' % args.input
+        return -1
     print input_files
     
     # Loop over the input files.
@@ -45,7 +40,6 @@ def main():
             DH_hist = loaded['DH_hist']
             DA_hist = loaded['DA_hist']
             de_hist = loaded['de_hist']
-            print de_hist
             phi_hist = loaded['phi_hist']
             f_hist = loaded['f_hist']
             q_hist = loaded['q_hist']

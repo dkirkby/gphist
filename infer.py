@@ -249,7 +249,7 @@ def main():
 
             # Calculate -logL for each combination of posterior and prior sample.
             posteriors_nlp = gphist.analysis.calculate_posteriors_nlp(
-                evol.zvalues,DH,DA,mu,np.empty_like(DH),np.empty_like(DH),posteriors)#the Nones are for the aperp and apar needed for the r_s scaling case
+                evol.zvalues,DH,DA,mu,np.empty_like(DH),np.empty_like(DH),posteriors)#the emptys are for the aperp and apar needed for the r_s scaling case
 
             # Select some random realizations for each combination of posteriors.
             # For now, we just sample the first cycle but it might be better to sample
