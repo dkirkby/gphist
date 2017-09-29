@@ -60,3 +60,5 @@ target/
 *.png
 *.pdf
 profile.out
+
+.DS_Store
