@@ -1,19 +1,7 @@
 # Cosmological Expansion History Inference using Gaussian Processes
 
-Documentation for release version 0.1 is at http://darkmatter.ps.uci.edu/gphist
+[![Documentation Status](https://readthedocs.org/projects/gphist/badge/?version=latest)](http://gphist.readthedocs.io/en/latest/?badge=latest)
 
-To build the HTML documentation, use:
+This is the supporting code for Joudaki, Kaplinghat, Keeley, Kirkby, "Model independent inference of the expansion history and implications for the growth of structure" (2017).
 
-```
-cd .../gphist/docs
-make html
-```
-
-To view the most recent build of the HTML documentation, point your browser to `.../gphist/docs/_build/html/index.html`
-
-To create a tarball snapshot `.../gphist/docs/_build/gphist.tgz` that can be installed on a web server, use:
-
-```
-cd .../gphist/docs/_build/html
-tar -zcf ../gphist.tgz .
-```
+Documentation is [here](http://gphist.readthedocs.io/).
