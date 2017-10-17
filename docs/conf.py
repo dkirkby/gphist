@@ -94,6 +94,23 @@ pygments_style = 'sphinx'
 # If true, keep warnings as "system message" paragraphs in the built documents.
 #keep_warnings = False
 
+# This value contains a list of modules to be mocked up. This is useful when
+# some external dependencies are not met at build time and break the
+# building process.
+autodoc_mock_imports = [
+    'numpy',
+    'numpy.linalg',
+    'scipy.stats',
+    'scipy.interpolate',
+    'scipy.misc',
+    'scipy.integrate',
+    'matplotlib',
+    'matplotlib.pyplot',
+    'matplotlib.patches',
+    'astropy.constants',
+    'astropy.units',
+    'astropy.cosmology'
+    ]
 
 # -- Options for HTML output ----------------------------------------------
 
